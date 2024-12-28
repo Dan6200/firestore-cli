@@ -1,46 +1,77 @@
 //cspell:disable
 import { Chalk } from "chalk";
+import ora from "ora";
+import { Command, Options } from "commander";
 import { authenticateFirestore } from "./auth-1.js";
-import { printObj } from "./utils.js";
+import { handleSecretKey, handleWhereClause, printObj } from "./utils.js";
+import { spawn } from "child_process";
 
 const chalk = new Chalk({ level: 3 });
+const less = spawn("less", ["-R"], { stdio: ["pipe", "inherit", "inherit"] });
+let failedToStartLess = false;
+less.on("error", () => {
+  failedToStartLess = true;
+  console.error(
+    "Could not find less installed on your system. Printing directly to stdout instead\n"
+  );
+});
+let stdOutput = "";
 
-export default async (collection: string) => {
+export default async (collection: string, options: Options) => {
+  const spinner = ora("Fetching documents from " + collection + "\n").start();
   try {
-    const db = await authenticateFirestore(
-      "./secret-key/linkid-app-561d4-firebase-adminsdk-boiy2-a1b3f125aa.json"
-    );
-    const snapshot = await db.collection(collection).get();
+    const secretKey = handleSecretKey(options.secretKey);
+    const db = await authenticateFirestore(secretKey, options.databaseId);
+    let snapshot = null;
+    if (options.where) {
+      snapshot = await handleWhereClause(db, collection, options.where).get();
+    } else {
+      snapshot = await db.collection(collection).get();
+    }
+
     if (snapshot.empty) {
-      console.log("[]");
+      spinner.succeed("Done!"); // I can't see the check mark, less starts immediately
+      console.log("[]\n");
       return;
     }
     const INDENT = "    ";
-    console.log("[");
+    if (failedToStartLess) {
+      spinner.succeed("Done!");
+      console.log("[\n");
+    } else stdOutput += "[\n";
     let docCount = 1;
     snapshot.forEach((doc) => {
-      if (docCount !== snapshot.size)
-        console.log(
-          `${INDENT + doc.id} => ${printObj(
-            doc.data(),
-            undefined,
-            INDENT,
-            chalk
-          )},`
-        );
-      else
-        console.log(
-          `${INDENT + doc.id} => ${printObj(
-            doc.data(),
-            undefined,
-            INDENT,
-            chalk
-          )}`
-        );
-      docCount++;
+      if (docCount !== snapshot.size) {
+        const output = `${INDENT + doc.id} => ${printObj(
+          doc.data(),
+          undefined,
+          INDENT,
+          chalk
+        )},\n`;
+        if (failedToStartLess) console.log(output);
+        else stdOutput += output;
+      } else {
+        const output = `${INDENT + doc.id} => ${printObj(
+          doc.data(),
+          undefined,
+          INDENT,
+          chalk
+        )}\n`;
+        docCount++;
+        if (failedToStartLess) console.log(output);
+        else stdOutput += output;
+      }
     });
-    console.log("]");
+    if (failedToStartLess) console.log("]\n");
+    else {
+      stdOutput += "]\n";
+      spinner.succeed("Done!");
+    }
+    if (!failedToStartLess) less.stdin.write(stdOutput);
   } catch (e) {
+    spinner.fail("Failed to fetch documents!");
     console.error(e);
+  } finally {
+    if (!failedToStartLess) less.stdin.end();
   }
 };
