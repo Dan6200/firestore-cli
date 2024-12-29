@@ -57,7 +57,7 @@ export default async (
     if (options.json) {
       const snapArray = [];
       snapshot.forEach((doc) => snapArray.push({ [doc.id]: doc.data() }));
-      stdOutput = JSON.stringify(snapArray, null, options.whiteSpace);
+      stdOutput = JSON.stringify(snapArray, null, options.whiteSpace ?? 2);
       if (failedToStartLess) process.stdout.write(stdOutput);
     } else
       stdOutput = printDocuments(
@@ -70,7 +70,7 @@ export default async (
       spinner.succeed("Done!");
       await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    if (!failedToStartLess) less.stdin.write(stdOutput); // How do I add a delay to this so I can see the spinner done confirmation?
+    if (!failedToStartLess) less.stdin.write(stdOutput);
   } catch (e) {
     spinner.fail("Failed to fetch documents!");
     console.error(e);

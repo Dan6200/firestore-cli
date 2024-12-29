@@ -74,11 +74,11 @@ export function printDocuments(
   snapshot: QuerySnapshot,
   chalk: ChalkInstance,
   failedToStartLess = true,
-  whiteSpace = 0,
+  whiteSpace = 2,
   stdOutput = ""
 ) {
   const INDENT = " ".repeat(whiteSpace);
-  const NEWLINE_AMOUNT = Math.floor(Math.log2(whiteSpace));
+  const NEWLINE_AMOUNT = Math.floor(Math.max(1, Math.log2(whiteSpace)));
   let output = "[" + "\n".repeat(NEWLINE_AMOUNT);
   if (failedToStartLess) process.stdout.write(output);
   else stdOutput += output;
