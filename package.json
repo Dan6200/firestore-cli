@@ -7,10 +7,10 @@
   "scripts": {
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
     "build": "tsc -p tsconfig.json",
-    "dev": "tsx main.ts"
+    "dev": "tsx main.mts"
   },
   "bin": {
-    "firestore-cli": "main.js"
+    "firestore-cli": "main.mjs"
   },
   "keywords": [],
   "author": "",

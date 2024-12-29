@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import get from "./get.js";
+import get from "./get.mjs";
 const program = new Command();
 
 program
