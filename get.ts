@@ -3,8 +3,14 @@ import { Chalk } from "chalk";
 import ora from "ora";
 import { Command, Options } from "commander";
 import { authenticateFirestore } from "./auth-1.js";
-import { handleSecretKey, handleWhereClause, printObj } from "./utils.js";
+import {
+  handleSecretKey,
+  handleWhereClause,
+  printDocuments,
+  printObj,
+} from "./utils.js";
 import { spawn } from "child_process";
+import { QuerySnapshot } from "firebase-admin/firestore";
 
 const chalk = new Chalk({ level: 3 });
 const less = spawn("less", ["-R"], { stdio: ["pipe", "inherit", "inherit"] });
@@ -15,14 +21,23 @@ less.on("error", () => {
     "Could not find less installed on your system. Printing directly to stdout instead\n"
   );
 });
-let stdOutput = "";
 
-export default async (collection: string, options: Options) => {
+less.on("close", (code) => {
+  if (code !== 0) {
+    console.error("Less process ended unexpectedly.");
+  }
+});
+
+export default async (
+  globalOptions: Options,
+  collection: string,
+  options: Options
+) => {
   const spinner = ora("Fetching documents from " + collection + "\n").start();
   try {
-    const secretKey = handleSecretKey(options.secretKey);
-    const db = await authenticateFirestore(secretKey, options.databaseId);
-    let snapshot = null;
+    const secretKey = handleSecretKey(globalOptions.secretKey);
+    const db = await authenticateFirestore(secretKey, globalOptions.databaseId);
+    let snapshot: null | QuerySnapshot = null;
     if (options.where) {
       snapshot = await handleWhereClause(db, collection, options.where).get();
     } else {
@@ -31,43 +46,31 @@ export default async (collection: string, options: Options) => {
 
     if (snapshot.empty) {
       spinner.succeed("Done!"); // I can't see the check mark, less starts immediately
-      console.log("[]\n");
+      console.log("[]");
       return;
     }
-    const INDENT = "    ";
     if (failedToStartLess) {
       spinner.succeed("Done!");
-      console.log("[\n");
-    } else stdOutput += "[\n";
-    let docCount = 1;
-    snapshot.forEach((doc) => {
-      if (docCount !== snapshot.size) {
-        const output = `${INDENT + doc.id} => ${printObj(
-          doc.data(),
-          undefined,
-          INDENT,
-          chalk
-        )},\n`;
-        if (failedToStartLess) console.log(output);
-        else stdOutput += output;
-      } else {
-        const output = `${INDENT + doc.id} => ${printObj(
-          doc.data(),
-          undefined,
-          INDENT,
-          chalk
-        )}\n`;
-        docCount++;
-        if (failedToStartLess) console.log(output);
-        else stdOutput += output;
-      }
-    });
-    if (failedToStartLess) console.log("]\n");
-    else {
-      stdOutput += "]\n";
-      spinner.succeed("Done!");
     }
-    if (!failedToStartLess) less.stdin.write(stdOutput);
+
+    let stdOutput = null;
+    if (options.json) {
+      const snapArray = [];
+      snapshot.forEach((doc) => snapArray.push({ [doc.id]: doc.data() }));
+      stdOutput = JSON.stringify(snapArray, null, options.whiteSpace);
+      if (failedToStartLess) process.stdout.write(stdOutput);
+    } else
+      stdOutput = printDocuments(
+        snapshot,
+        chalk,
+        failedToStartLess,
+        options.whiteSpace
+      );
+    if (!failedToStartLess) {
+      spinner.succeed("Done!");
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    if (!failedToStartLess) less.stdin.write(stdOutput); // How do I add a delay to this so I can see the spinner done confirmation?
   } catch (e) {
     spinner.fail("Failed to fetch documents!");
     console.error(e);

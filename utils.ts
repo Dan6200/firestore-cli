@@ -1,5 +1,5 @@
 import { ChalkInstance } from "chalk";
-import { Firestore } from "firebase-admin/firestore";
+import { Firestore, QuerySnapshot } from "firebase-admin/firestore";
 import { existsSync, readdirSync } from "fs";
 import { MockChalk } from "./types-and-interfaces.js";
 import { Options } from "commander";
@@ -68,4 +68,46 @@ export function handleWhereClause(
   where: Options["where"]
 ) {
   return database.collection(collection).where(where[0], where[1], where[2]);
+}
+
+export function printDocuments(
+  snapshot: QuerySnapshot,
+  chalk: ChalkInstance,
+  failedToStartLess = true,
+  whiteSpace = 0,
+  stdOutput = ""
+) {
+  const INDENT = " ".repeat(whiteSpace);
+  const NEWLINE_AMOUNT = Math.floor(Math.log2(whiteSpace));
+  let output = "[" + "\n".repeat(NEWLINE_AMOUNT);
+  if (failedToStartLess) process.stdout.write(output);
+  else stdOutput += output;
+  let docCount = 1;
+  snapshot.forEach((doc) => {
+    if (docCount !== snapshot.size) {
+      output =
+        `${INDENT + doc.id} => ${printObj(
+          doc.data(),
+          undefined,
+          INDENT,
+          chalk
+        )},` + "\n".repeat(NEWLINE_AMOUNT);
+    } else {
+      output =
+        `${INDENT + doc.id} => ${printObj(
+          doc.data(),
+          undefined,
+          INDENT,
+          chalk
+        )}` + "\n".repeat(NEWLINE_AMOUNT);
+    }
+    if (!output) throw new Error("Error fetching documents!");
+    if (failedToStartLess) process.stdout.write(output);
+    else stdOutput += output;
+    docCount++;
+  });
+  output = "]";
+  if (failedToStartLess) process.stdout.write(output);
+  else stdOutput += output;
+  return stdOutput;
 }

@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import get from "./get.js";
-export const program = new Command();
+const program = new Command();
 
 program
   .name("firestore-cli")
@@ -18,5 +18,13 @@ program
     "-w, --where [value...]",
     "Filters according to the field, operator and value"
   )
+  .option(
+    "-ws, --white-space <VALUE>",
+    "Determines the amount of whitespace and indentation the documents should be printed with",
+    parseInt
+  )
+  .option("-j, --json", "Output should be in JSON format")
   .description("Fetch documents from a collection")
-  .action(get);
+  .action(get.bind(null, program.opts()));
+
+export { program };

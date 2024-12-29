@@ -5,5 +5,7 @@ declare module "commander" {
     secretKey: string;
     databaseId?: string;
     where?: [string, "==" | ">=" | "<=" | "!=", string];
+    json?: boolean;
+    whiteSpace?: number;
   }
 }
