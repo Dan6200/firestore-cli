@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import add from "./add.mjs";
 import get from "./get.mjs";
 const program = new Command();
 
@@ -11,6 +12,17 @@ program
     "Filepath to the secret-key for authentication.\nMust provide the file path as an argument to the option '--secret-key' or include a directory named 'secret-key' with the secret key file in it."
   )
   .option("--database-id <VALUE>", "Specifies the database Id");
+
+program
+  .command("add <collection> [new-document-data]")
+  .option(
+    "-ws, --white-space <VALUE>",
+    "Determines the amount of whitespace and indentation the documents should be printed with",
+    parseInt
+  )
+  .option("-j, --json", "Output should be in JSON format")
+  .description("Add document to a collection")
+  .action(add.bind(null, program.opts()));
 
 program
   .command("get <collection>")
