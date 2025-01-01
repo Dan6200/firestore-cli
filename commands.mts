@@ -21,6 +21,7 @@ program
     parseInt
   )
   .option("-j, --json", "Output should be in JSON format")
+  .option("-b, --bulk", "Perform bulk add operations")
   .description("Add document to a collection")
   .action(add.bind(null, program.opts()));
 

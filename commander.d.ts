@@ -7,5 +7,6 @@ declare module "commander" {
     where?: [string, "==" | ">=" | "<=" | "!=", string];
     json?: boolean;
     whiteSpace?: number;
+    bulk?: boolean;
   }
 }

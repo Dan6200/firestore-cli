@@ -9,7 +9,7 @@ import {
   printDocuments,
 } from "./utils.mjs";
 import { QuerySnapshot } from "firebase-admin/firestore";
-import { failedToStartLess, less } from "./init-less.js";
+import { failedToStartPager, pager } from "./init-pager.js";
 
 const chalk = new Chalk({ level: 3 });
 
@@ -30,11 +30,11 @@ export default async (
     }
 
     if (snapshot.empty) {
-      spinner.succeed("Done!"); // I can't see the check mark, less starts immediately
+      spinner.succeed("Done!");
       console.log("[]");
       return;
     }
-    if (failedToStartLess) {
+    if (failedToStartPager) {
       spinner.succeed("Done!");
     }
 
@@ -43,23 +43,23 @@ export default async (
       const snapArray = [];
       snapshot.forEach((doc) => snapArray.push({ [doc.id]: doc.data() }));
       stdOutput = JSON.stringify(snapArray, null, options.whiteSpace ?? 2);
-      if (failedToStartLess) process.stdout.write(stdOutput);
+      if (failedToStartPager) process.stdout.write(stdOutput);
     } else
       stdOutput = printDocuments(
         snapshot,
         chalk,
-        failedToStartLess,
+        failedToStartPager,
         options.whiteSpace
       );
-    if (!failedToStartLess) {
+    if (!failedToStartPager) {
       spinner.succeed("Done!");
       await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    if (!failedToStartLess) less.stdin.write(stdOutput);
+    if (!failedToStartPager) pager.stdin.write(stdOutput);
   } catch (e) {
     spinner.fail("Failed to fetch documents!");
     console.error(e);
   } finally {
-    if (!failedToStartLess) less.stdin.end();
+    if (!failedToStartPager) pager.stdin.end();
   }
 };
