@@ -19,6 +19,7 @@
     "@types/node": "^22.10.2",
     "chalk": "^5.4.1",
     "commander": "^12.1.0",
+    "fast-csv": "^5.0.2",
     "firebase-admin": "^13.0.2",
     "ora": "^8.1.1",
     "typescript": "^5.7.2"

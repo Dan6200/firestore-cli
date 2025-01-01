@@ -11,7 +11,19 @@ program
     "--secret-key <VALUE>",
     "Filepath to the secret-key for authentication.\nMust provide the file path as an argument to the option '--secret-key' or include a directory named 'secret-key' with the secret key file in it."
   )
-  .option("--database-id <VALUE>", "Specifies the database Id");
+  .option("--database-id <VALUE>", "Specifies the database Id")
+  .option(
+    "--pager <VALUE>",
+    "Customizes which pager should be used to read output. The default is 'less'"
+  )
+  .option(
+    "--custom-id <VALUE>",
+    "Allows the customization of the document id. The data record must contain the document_id field, or the program exits with an error"
+  )
+  .option(
+    "--pager-args [ARGS...]",
+    "The arguments which should be passed to the pager"
+  );
 
 program
   .command("add <collection> [new-document-data]")
@@ -22,6 +34,10 @@ program
   )
   .option("-j, --json", "Output should be in JSON format")
   .option("-b, --bulk", "Perform bulk add operations")
+  .option(
+    "-f --file <VALUE>",
+    "Read input from a file. Unless the --file-type flag is set, the file is assumed to be in JSON format"
+  )
   .description("Add document to a collection")
   .action(add.bind(null, program.opts()));
 

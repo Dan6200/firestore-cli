@@ -9,7 +9,7 @@ import {
   printDocuments,
 } from "./utils.mjs";
 import { QuerySnapshot } from "firebase-admin/firestore";
-import { failedToStartPager, pager } from "./init-pager.js";
+import { initializePager } from "./init-pager.mjs";
 
 const chalk = new Chalk({ level: 3 });
 
@@ -18,6 +18,9 @@ export default async (
   collection: string,
   options: Options
 ) => {
+  let pager = null,
+    failedToStartPager = null;
+  if (collection) ({ pager, failedToStartPager } = initializePager());
   const spinner = ora("Fetching documents from " + collection + "\n").start();
   try {
     const secretKey = handleSecretKey(globalOptions.secretKey);

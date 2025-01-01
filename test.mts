@@ -1,4 +1,4 @@
-import { printObj } from "./utils.js";
+import { printObj } from "./utils.mjs";
 import { jest } from "@jest/globals";
 import { MockChalk } from "./types-and-interfaces.js";
 

@@ -5,7 +5,9 @@ import { Options } from "commander";
 import { authenticateFirestore } from "./auth-1.js";
 import { handleSecretKey, printDocuments } from "./utils.mjs";
 import { DocumentSnapshot, QuerySnapshot } from "firebase-admin/firestore";
-import { failedToStartPager, pager } from "./init-pager.js";
+import { initializePager } from "./init-pager.mjs";
+import { existsSync } from "fs";
+import { resolve } from "path";
 
 const chalk = new Chalk({ level: 3 });
 
@@ -15,22 +17,42 @@ export default async (
   data: string,
   options: Options
 ) => {
+  let pager = null,
+    failedToStartPager = null;
+  if (collection) ({ pager, failedToStartPager } = initializePager());
   const spinner = ora("Adding document(s) to " + collection + "\n").start();
   try {
     const secretKey = handleSecretKey(globalOptions.secretKey);
     const db = await authenticateFirestore(secretKey, globalOptions.databaseId);
-    if (!data) {
-      throw new Error(
-        "Missing data input: Please provide the new data either as command-line arguments or by specifying a file with the -f flag."
-      );
-    }
     let parsedData: object | null = null;
-    try {
-      parsedData = JSON.parse(data);
-    } catch (e) {
-      throw new Error(
-        "Parsing error. Ensure your JSON is formatted properly: " + e
-      );
+    if (options.file) {
+      const inputFile = options.file;
+      console.log(inputFile);
+      if (!existsSync(inputFile)) {
+        throw new Error(
+          "Invalid file path for the --file option: " + inputFile
+        );
+      }
+      if (!options.fileType || options.fileType.toUpperCase() === "JSON")
+        ({ default: parsedData } = await import(resolve(inputFile), {
+          assert: { type: "json" },
+        }));
+      else {
+        /*TODO: ...Add Support for YAML and CSV filetypes*/
+      }
+    } else {
+      if (!data) {
+        throw new Error(
+          "Missing data input: Please provide the new data either as command-line arguments or by specifying a file with the -f flag."
+        );
+      }
+      try {
+        parsedData = JSON.parse(data);
+      } catch (e) {
+        throw new Error(
+          "Parsing error. Ensure your JSON is formatted properly: " + e
+        );
+      }
     }
     let stdOutput: string | null = null;
     let snapshot: DocumentSnapshot | QuerySnapshot;
@@ -81,6 +103,7 @@ const printSnapshot = async (
   // Handle json print option...
   if (json) {
     // Handle different types of snapshots...
+    // ...Make printing JSONs its own function/method
     if (snapshot instanceof DocumentSnapshot) {
       if (!snapshot.exists) throw new Error("Document does not exist");
 

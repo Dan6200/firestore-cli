@@ -7,6 +7,7 @@ import {
 import { existsSync, readdirSync } from "fs";
 import { MockChalk } from "./types-and-interfaces.js";
 import { Options } from "commander";
+import { initializePager } from "./init-pager.mjs";
 
 export function printObj(
   obj: object,

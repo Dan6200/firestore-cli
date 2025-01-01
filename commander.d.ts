@@ -8,5 +8,7 @@ declare module "commander" {
     json?: boolean;
     whiteSpace?: number;
     bulk?: boolean;
+    file?: string;
+    fileType?: "JSON" | "CSV" | "YAML";
   }
 }
