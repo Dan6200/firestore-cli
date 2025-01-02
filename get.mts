@@ -35,7 +35,7 @@ export default async (
     let snapshot: null | QuerySnapshot = null;
     if (options.where) {
       let ref: CollectionReference | Query = db.collection(collection);
-      snapshot = await handleWhereClause(ref, options.where).get();
+      //snapshot = await handleWhereClause(ref, options.where).get();
     } else {
       snapshot = await db.collection(collection).get();
     }

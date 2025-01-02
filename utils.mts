@@ -8,7 +8,7 @@ import {
 } from "firebase-admin/firestore";
 import { existsSync, readdirSync } from "fs";
 import { MockChalk } from "./types-and-interfaces.js";
-import { Options, WhereCondition } from "commander";
+import { Options, OrClause, WhereClause, WhereCondition } from "commander";
 import { initializePager } from "./init-pager.mjs";
 
 export function printObj(
@@ -73,6 +73,7 @@ export function handleWhereClause(
   ref: CollectionReference | Query,
   where: Options["where"]
 ) {
+  // TODO: testing
   if (!where || !where.length)
     throw new Error(
       "Must contain where clause if the --where flag is used or an 'OR' query is being used"
@@ -81,15 +82,19 @@ export function handleWhereClause(
   if ("or" in where || "OR" in where) {
     let orClause = where;
     while ("or" in orClause || "OR" in orClause) {
-      const firstClause = where.slice(0, where.indexOf("or"));
-      orClause = orClause.slice(
-        orClause.indexOf("or") + 1,
-        orClause.length
-      ) as any;
-      for (let i = 0; i + 3 < firstClause.length; i += 3)
+      const orIndex =
+        where.indexOf("or") >= 0 ? where.indexOf("or") : where.indexOf("OR");
+      const firstClause = orClause.slice(0, orIndex);
+      orClause = orClause.slice(orIndex + 1, orClause.length) as any;
+      for (let i = 0; i + 3 < firstClause.length; i += 3) {
+        if (!isValidWhereCondition(firstClause[i + 1]))
+          throw new Error(
+            `Operator string must be one of the following: "==", ">", ">=", "<=", "<", "!=", "in", "not-in", "array-contains", "array-contains-any".`
+          );
         whereFilters.push(
           Filter.where(firstClause[i], firstClause[i + 1], firstClause[i + 2])
         );
+      }
     }
     ref = ref.where(Filter.or(...whereFilters));
   } else {
@@ -97,6 +102,21 @@ export function handleWhereClause(
       ref = ref.where(where[i], where[i + 1], where[i + 2]);
   }
   return ref;
+}
+
+function isValidWhereCondition(condition: any): condition is WhereCondition {
+  return [
+    "==",
+    ">",
+    ">=",
+    "<=",
+    "<",
+    "!=",
+    "in",
+    "not-in",
+    "array-contains",
+    "array-contains-any",
+  ].includes(condition);
 }
 
 export function printDocuments(
