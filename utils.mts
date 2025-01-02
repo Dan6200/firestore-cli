@@ -1,12 +1,14 @@
 import { ChalkInstance } from "chalk";
 import {
+  CollectionReference,
   DocumentSnapshot,
-  Firestore,
+  Filter,
+  Query,
   QuerySnapshot,
 } from "firebase-admin/firestore";
 import { existsSync, readdirSync } from "fs";
 import { MockChalk } from "./types-and-interfaces.js";
-import { Options } from "commander";
+import { Options, WhereCondition } from "commander";
 import { initializePager } from "./init-pager.mjs";
 
 export function printObj(
@@ -50,17 +52,17 @@ export function printObj(
 
 export function handleSecretKey(secretKey: string | null) {
   if (!secretKey) {
-    if (!existsSync("./secret-key"))
+    if (!existsSync("./service-account"))
       throw new Error(
-        "Must Provide A Secret-key File To Authenticate!\n       Either provide the file path as an argument to the option '--secret-key' or include a directory named 'secret-key' with the secret key file in it."
+        "Must Provide A Service-account Key File To Authenticate!\n       Either provide the file path as an argument to the option '--service-account' or include a directory named 'service-account' with the secret key file in it."
       );
-    const secretKeyDir = readdirSync("./secret-key");
+    const secretKeyDir = readdirSync("./service-account");
     const file = secretKeyDir.find((file) => file.endsWith(".json"));
     if (!file)
       throw new Error(
-        "Your secret-key directory does not contain the JSON key file!\n       Either provide the file path as an argument to the option '--secret-key' or include a directory named 'secret-key' with the secret key file in it."
+        "Your service-account directory does not contain the JSON key file!\n       Either provide the file path as an argument to the option '--service-account' or include a directory named 'service-account' with the secret key file in it."
       );
-    return "./secret-key/" + file;
+    return "./service-account/" + file;
   }
   if (!existsSync(secretKey))
     throw new Error("Secret-key file path does not exist!");
@@ -68,11 +70,33 @@ export function handleSecretKey(secretKey: string | null) {
 }
 
 export function handleWhereClause(
-  database: Firestore,
-  collection: string,
+  ref: CollectionReference | Query,
   where: Options["where"]
 ) {
-  return database.collection(collection).where(where[0], where[1], where[2]);
+  if (!where || !where.length)
+    throw new Error(
+      "Must contain where clause if the --where flag is used or an 'OR' query is being used"
+    );
+  let whereFilters = [];
+  if ("or" in where || "OR" in where) {
+    let orClause = where;
+    while ("or" in orClause || "OR" in orClause) {
+      const firstClause = where.slice(0, where.indexOf("or"));
+      orClause = orClause.slice(
+        orClause.indexOf("or") + 1,
+        orClause.length
+      ) as any;
+      for (let i = 0; i + 3 < firstClause.length; i += 3)
+        whereFilters.push(
+          Filter.where(firstClause[i], firstClause[i + 1], firstClause[i + 2])
+        );
+    }
+    ref = ref.where(Filter.or(...whereFilters));
+  } else {
+    for (let i = 0; i + 3 < where.length; i += 3)
+      ref = ref.where(where[i], where[i + 1], where[i + 2]);
+  }
+  return ref;
 }
 
 export function printDocuments(

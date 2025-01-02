@@ -8,7 +8,11 @@ import {
   handleWhereClause,
   printDocuments,
 } from "./utils.mjs";
-import { QuerySnapshot } from "firebase-admin/firestore";
+import {
+  CollectionReference,
+  Query,
+  QuerySnapshot,
+} from "firebase-admin/firestore";
 import { initializePager } from "./init-pager.mjs";
 
 const chalk = new Chalk({ level: 3 });
@@ -23,11 +27,15 @@ export default async (
   if (collection) ({ pager, failedToStartPager } = initializePager());
   const spinner = ora("Fetching documents from " + collection + "\n").start();
   try {
-    const secretKey = handleSecretKey(globalOptions.secretKey);
-    const db = await authenticateFirestore(secretKey, globalOptions.databaseId);
+    const serviceAccount = handleSecretKey(globalOptions.serviceAccount);
+    const db = await authenticateFirestore(
+      serviceAccount,
+      globalOptions.databaseId
+    );
     let snapshot: null | QuerySnapshot = null;
     if (options.where) {
-      snapshot = await handleWhereClause(db, collection, options.where).get();
+      let ref: CollectionReference | Query = db.collection(collection);
+      snapshot = await handleWhereClause(ref, options.where).get();
     } else {
       snapshot = await db.collection(collection).get();
     }

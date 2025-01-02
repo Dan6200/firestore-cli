@@ -8,8 +8,8 @@ program
   .description("CLI tool to query google cloud firebase firestore database")
   .version("1.0.0")
   .option(
-    "--secret-key <VALUE>",
-    "Filepath to the secret-key for authentication.\nMust provide the file path as an argument to the option '--secret-key' or include a directory named 'secret-key' with the secret key file in it."
+    "--service-account <VALUE>",
+    "Filepath to the service account JSON key file for authentication.\nMust provide the file path as an argument to the option '--service-account' or include a directory named 'service-account' with the JSON key file in it."
   )
   .option("--database-id <VALUE>", "Specifies the database Id")
   .option(

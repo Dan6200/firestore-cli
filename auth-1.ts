@@ -7,11 +7,14 @@ export async function authenticateFirestore(
   serviceAccountPath: string,
   dbId?: string
 ) {
-  const { default: secretKey } = await import(resolve(serviceAccountPath), {
-    assert: { type: "json" },
-  });
+  const { default: serviceAccount } = await import(
+    resolve(serviceAccountPath),
+    {
+      assert: { type: "json" },
+    }
+  );
   const app = initializeApp({
-    credential: fbAdmin.credential.cert(secretKey as ServiceAccount),
+    credential: fbAdmin.credential.cert(serviceAccount as ServiceAccount),
   });
   // TOD0: remove "staging" in production
   return initializeFirestore(app, {}, dbId);
