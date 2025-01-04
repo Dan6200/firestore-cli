@@ -2,12 +2,9 @@
 import { Chalk } from "chalk";
 import ora from "ora";
 import { Options } from "commander";
-import { authenticateFirestore } from "./auth-1.js";
-import {
-  handleSecretKey,
-  handleWhereClause,
-  printDocuments,
-} from "./utils.mjs";
+import { authenticateFirestore } from "./auth-1.mjs";
+import { handleSecretKey } from "./utils/auth.mjs";
+import { printDocuments } from "./utils/print.mjs";
 import {
   CollectionReference,
   Query,

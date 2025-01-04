@@ -18,7 +18,11 @@ program
   )
   .option(
     "--custom-id <VALUE>",
-    "Allows the customization of the document id. The data record must contain the document_id field, or the program exits with an error"
+    "Allows the customization of the document id for the addition of a single document."
+  )
+  .option(
+    "--custom-ids [VALUE...]",
+    "Allows the customization of the document id for bulk addition of documents. Must be used in conjunction with the --bulk flag or an error occurs"
   )
   .option(
     "--pager-args [ARGS...]",

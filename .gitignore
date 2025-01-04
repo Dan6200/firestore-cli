@@ -4,3 +4,4 @@ service-account
 testing_data
 *.js
 *.mjs
+.vscode

@@ -2,8 +2,9 @@
 import { Chalk } from "chalk";
 import ora from "ora";
 import { Options } from "commander";
-import { authenticateFirestore } from "./auth-1.js";
-import { handleSecretKey, printDocuments } from "./utils.mjs";
+import { authenticateFirestore } from "./auth-1.mjs";
+import { printDocuments } from "./utils/print.mjs";
+import { handleSecretKey } from "./utils/auth.mjs";
 import { DocumentSnapshot, QuerySnapshot } from "firebase-admin/firestore";
 import { initializePager } from "./init-pager.mjs";
 import { existsSync } from "fs";
@@ -22,12 +23,14 @@ export default async (
   if (collection) ({ pager, failedToStartPager } = initializePager());
   const spinner = ora("Adding document(s) to " + collection + "\n").start();
   try {
-    const secretKey = handleSecretKey(globalOptions.secretKey);
-    const db = await authenticateFirestore(secretKey, globalOptions.databaseId);
+    const serviceAccount = handleSecretKey(globalOptions.serviceAccount);
+    const db = await authenticateFirestore(
+      serviceAccount,
+      globalOptions.databaseId
+    );
     let parsedData: object | null = null;
     if (options.file) {
       const inputFile = options.file;
-      console.log(inputFile);
       if (!existsSync(inputFile)) {
         throw new Error(
           "Invalid file path for the --file option: " + inputFile

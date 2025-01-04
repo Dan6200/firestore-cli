@@ -48,9 +48,15 @@ importers:
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@22.10.2)
+      jest-ts-webcompat-resolver:
+        specifier: ^1.0.0
+        version: 1.0.0(jest-resolve@29.7.0)
       ts-jest:
         specifier: ^29.2.5
         version: 29.2.5(@babel/core@7.26.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.0))(jest@29.7.0(@types/node@22.10.2))(typescript@5.7.2)
+      tsconfig-paths-jest:
+        specifier: ^0.0.1
+        version: 0.0.1
 
 packages:
 
@@ -1581,6 +1587,11 @@ packages:
     resolution: {integrity: sha512-Rm0BMWtxBcioHr1/OX5YCP8Uov4riHvKPknOGs804Zg9JGZgmIBkbtlxJC/7Z4msKYVbIJtfU+tKb8xlYNfdkw==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
 
+  jest-ts-webcompat-resolver@1.0.0:
+    resolution: {integrity: sha512-BFoaU7LeYqZNnTYEr6iMRf87xdCQntNc/Wk8YpzDBcuz+CIZ0JsTtzuMAMnKiEgTRTC1wRWLUo2RlVjVijBcHQ==}
+    peerDependencies:
+      jest-resolve: '*'
+
   jest-util@29.7.0:
     resolution: {integrity: sha512-z6EbKajIpqGKU56y5KBUgy1dt1ihhQJgWzUlZHArA/+X2ad7Cb5iF+AK1EWVL/Bo7Rz9uurpqw6SiBCefUbCGA==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
@@ -2129,6 +2140,9 @@ packages:
         optional: true
       esbuild:
         optional: true
+
+  tsconfig-paths-jest@0.0.1:
+    resolution: {integrity: sha512-YKhUKqbteklNppC2NqL7dv1cWF8eEobgHVD5kjF1y9Q4ocqpBiaDlYslQ9eMhtbqIPRrA68RIEXqknEjlxdwxw==}
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
@@ -4341,6 +4355,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  jest-ts-webcompat-resolver@1.0.0(jest-resolve@29.7.0):
+    dependencies:
+      jest-resolve: 29.7.0
+
   jest-util@29.7.0:
     dependencies:
       '@jest/types': 29.6.3
@@ -4895,6 +4913,8 @@ snapshots:
       '@jest/transform': 29.7.0
       '@jest/types': 29.6.3
       babel-jest: 29.7.0(@babel/core@7.26.0)
+
+  tsconfig-paths-jest@0.0.1: {}
 
   tslib@2.8.1: {}
 

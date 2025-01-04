@@ -2,12 +2,13 @@
   "compilerOptions": {
     "target": "ES6",
     "module": "NodeNext",
-    "outDir": "./",
+    "outDir": "./built",
     "rootDir": "./",
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "noImplicitAny": true
   },
   "include": ["*", "**/*"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "built"]
 }

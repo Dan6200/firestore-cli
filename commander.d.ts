@@ -4,7 +4,7 @@ declare module "commander" {
   interface Options {
     serviceAccount: string;
     databaseId?: string;
-    where?: [...(WhereClause | OrClause), ...(WhereClause | OrClause)[]];
+    where?: Condition;
     json?: boolean;
     whiteSpace?: number;
     bulk?: boolean;
@@ -24,4 +24,5 @@ declare module "commander" {
     | "not-in"
     | "array-contains"
     | "array-contains-any";
+  type Condition = [...(WhereClause | OrClause), ...(WhereClause | OrClause)[]];
 }
