@@ -11,6 +11,7 @@ import {
   QuerySnapshot,
 } from "firebase-admin/firestore";
 import { initializePager } from "./init-pager.mjs";
+import handleWhereClause from "./utils/handle-where-clause.mjs";
 
 const chalk = new Chalk({ level: 3 });
 
@@ -19,7 +20,7 @@ export default async (
   collection: string,
   options: Options
 ) => {
-  let pager = null,
+  let pager: any = null,
     failedToStartPager = null;
   if (collection) ({ pager, failedToStartPager } = initializePager());
   const spinner = ora("Fetching documents from " + collection + "\n").start();
@@ -30,14 +31,14 @@ export default async (
       globalOptions.databaseId
     );
     let snapshot: null | QuerySnapshot = null;
-    if (options.where) {
+    if (options.where.length > 0) {
       let ref: CollectionReference | Query = db.collection(collection);
-      //snapshot = await handleWhereClause(ref, options.where).get();
+      snapshot = await handleWhereClause(ref, options.where).get();
     } else {
       snapshot = await db.collection(collection).get();
     }
 
-    if (snapshot.empty) {
+    if (snapshot?.empty) {
       spinner.succeed("Done!");
       console.log("[]");
       return;
@@ -48,7 +49,7 @@ export default async (
 
     let stdOutput = null;
     if (options.json) {
-      const snapArray = [];
+      const snapArray: any[] = [];
       snapshot.forEach((doc) => snapArray.push({ [doc.id]: doc.data() }));
       stdOutput = JSON.stringify(snapArray, null, options.whiteSpace ?? 2);
       if (failedToStartPager) process.stdout.write(stdOutput);

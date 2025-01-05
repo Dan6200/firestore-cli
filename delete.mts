@@ -9,21 +9,15 @@ import { resolve } from "path";
 export default async (
   globalOptions: Options,
   collection: string,
-  data: string,
+  documentIds: string | string[],
   options: Options
 ) => {
-  let customId: string | undefined, customIds: string[] | undefined;
-  if (options.customId) ({ customId } = options);
-  if (options.customIds)
+  if (documentIds && Array)
     if (!options.bulk)
       throw new Error(
         "The --custom-ids flag can only be used in conjunction with the --bulk flag"
       );
-    else ({ customIds } = options);
-  if (!options.file && !data)
-    throw new Error(
-      "Must provide new document data as an argument or a file containing the data using the --file flag."
-    );
+    else ({ documentIds } = options);
   const spinner = ora("Adding document(s) to " + collection + "\n").start();
   try {
     const serviceAccount = handleSecretKey(globalOptions.serviceAccount);
@@ -47,6 +41,11 @@ export default async (
         /*TODO: ...Add Support for YAML and CSV filetypes*/
       }
     } else {
+      if (!data) {
+        throw new Error(
+          "Missing data input: Please provide the new data either as command-line arguments or by specifying a file with the -f flag."
+        );
+      }
       try {
         parsedData = JSON.parse(data);
       } catch (e) {
@@ -60,13 +59,13 @@ export default async (
         throw new Error("Data for bulk add operations must be in list form");
       const bulkData = parsedData;
       const batch = db.batch();
-      if (bulkData.length !== customIds.length)
+      if (bulkData.length !== documentIds.length)
         throw new Error(
           "Number of custom IDs must match the number of documents to be added"
         );
       bulkData.map((newData, index) => {
         const col = db.collection(collection);
-        const ref = customIds ? col.doc(customIds[index]) : col.doc();
+        const ref = documentIds ? col.doc(documentIds[index]) : col.doc();
         batch.set(ref, newData);
       });
       try {
@@ -76,7 +75,7 @@ export default async (
       }
     } else {
       const col = db.collection(collection);
-      const doc = customId ? col.doc(customId) : col.doc();
+      const doc = documentId ? col.doc(documentId) : col.doc();
       if (Array.isArray(parsedData))
         throw new Error("Data for add operations must be an object");
       await doc.set(parsedData);

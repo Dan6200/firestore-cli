@@ -6,24 +6,20 @@ import { handleSecretKey } from "./utils/auth.mjs";
 import { existsSync } from "fs";
 import { resolve } from "path";
 
+// TODO: Must support the JSON file option with contains both the new data and doc ids.
 export default async (
   globalOptions: Options,
   collection: string,
   data: string,
+  ids: string,
   options: Options
 ) => {
-  let customId: string | undefined, customIds: string[] | undefined;
-  if (options.customId) ({ customId } = options);
-  if (options.customIds)
-    if (!options.bulk)
-      throw new Error(
-        "The --custom-ids flag can only be used in conjunction with the --bulk flag"
-      );
-    else ({ customIds } = options);
-  if (!options.file && !data)
+  if (ids.length > 1 && !options.bulk)
     throw new Error(
-      "Must provide new document data as an argument or a file containing the data using the --file flag."
+      "Multiple IDs should only be provided in conjunction with the --bulk flag"
     );
+  if (options.file && ids)
+    throw new Error("Must provide IDs or a file containing a list of IDs");
   const spinner = ora("Adding document(s) to " + collection + "\n").start();
   try {
     const serviceAccount = handleSecretKey(globalOptions.serviceAccount);
@@ -31,7 +27,6 @@ export default async (
       serviceAccount,
       globalOptions.databaseId
     );
-    let parsedData: object | null = null;
     if (options.file) {
       const inputFile = options.file;
       if (!existsSync(inputFile)) {
@@ -40,33 +35,17 @@ export default async (
         );
       }
       if (!options.fileType || options.fileType.toUpperCase() === "JSON")
-        ({ default: parsedData } = await import(resolve(inputFile), {
+        ({ default: ids } = await import(resolve(inputFile), {
           assert: { type: "json" },
         }));
       else {
         /*TODO: ...Add Support for YAML and CSV filetypes*/
       }
-    } else {
-      try {
-        parsedData = JSON.parse(data);
-      } catch (e) {
-        throw new Error(
-          "Parsing error. Ensure your JSON is formatted properly: " + e
-        );
-      }
     }
     if (options.bulk) {
-      if (!Array.isArray(parsedData))
-        throw new Error("Data for bulk add operations must be in list form");
-      const bulkData = parsedData;
       const batch = db.batch();
-      if (bulkData.length !== customIds.length)
-        throw new Error(
-          "Number of custom IDs must match the number of documents to be added"
-        );
-      bulkData.map((newData, index) => {
-        const col = db.collection(collection);
-        const ref = customIds ? col.doc(customIds[index]) : col.doc();
+      ids.map((id, index) => {
+        const ref = db.collection(collection).doc(id);
         batch.set(ref, newData);
       });
       try {

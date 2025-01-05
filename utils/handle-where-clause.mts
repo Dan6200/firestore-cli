@@ -1,9 +1,9 @@
 import { CollectionReference, Filter, Query } from "firebase-admin/firestore";
-import { Condition, Options, WhereClause, WhereCondition } from "commander";
+import { Condition, WhereClause, WhereCondition } from "commander";
 
 export default function handleWhereClause(
   ref: CollectionReference | Query,
-  where: Options["where"]
+  where: Condition
 ) {
   if (!where || !where.length)
     throw new Error("Must contain where clause if the --where flag is used");

@@ -1,7 +1,7 @@
 import { spawn } from "child_process";
 import { program } from "./commands.mjs";
 
-let pager = null;
+let pager: any = null;
 let failedToStartPager = false;
 
 export function initializePager() {

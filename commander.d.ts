@@ -10,6 +10,8 @@ declare module "commander" {
     bulk?: boolean;
     file?: string;
     fileType?: "JSON" | "CSV" | "YAML";
+    customId?: string;
+    customIds?: string[];
   }
   type WhereClause = [string, WhereCondition, any];
   type OrClause = ["or" | "OR", ...WhereClause];
