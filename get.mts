@@ -62,7 +62,7 @@ export default async (
       );
     if (!failedToStartPager) {
       spinner.succeed("Done!");
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await new Promise(() => setTimeout(() => null, 250));
     }
     if (!failedToStartPager) pager.stdin.write(stdOutput);
   } catch (e) {

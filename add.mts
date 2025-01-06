@@ -57,7 +57,9 @@ export default async (
     }
     if (options.bulk) {
       if (!Array.isArray(parsedData))
-        throw new Error("Data for bulk add operations must be in list form");
+        throw new Error(
+          "Invalid data format: The data provided with the --bulk flag must be in array format for JSON/YAML or tabular format for CSV. Ensure your input is properly structured."
+        );
       const bulkData = parsedData;
       const batch = db.batch();
       if (bulkData.length !== customIds.length)
@@ -77,8 +79,11 @@ export default async (
     } else {
       const col = db.collection(collection);
       const doc = customId ? col.doc(customId) : col.doc();
-      if (Array.isArray(parsedData))
-        throw new Error("Data for add operations must be an object");
+      if (Array.isArray(parsedData)) {
+        throw new Error(
+          "Invalid data format: For add operations without the --bulk flag, the data must be a single object, not an array."
+        );
+      }
       await doc.set(parsedData);
     }
     spinner.succeed("Done!");

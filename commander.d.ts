@@ -12,6 +12,7 @@ declare module "commander" {
     fileType?: "JSON" | "CSV" | "YAML";
     customId?: string;
     customIds?: string[];
+    overwrite?: boolean;
   }
   type WhereClause = [string, WhereCondition, any];
   type OrClause = ["or" | "OR", ...WhereClause];

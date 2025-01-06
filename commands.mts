@@ -25,11 +25,15 @@ program
   );
 
 program
-  .command("update <collection> [data] [document-id]")
+  .command("update <collection> [data] [document-id...]")
   .option("-b, --bulk", "Perform bulk update operations")
   .option(
     "-f --file <VALUE>",
-    "Read input from a file. Unless the --file-type flag is set, the file is assumed to be in JSON format"
+    "Read input from a file.\nData is in the form of an object with the keys being the document IDs of the document(s) to be updated and the value being the new data.\nUnless the --file-type flag is set, the file is assumed to be in JSON format"
+  )
+  .option(
+    "--file-type <VALUE>",
+    "Specify the file type of the input file. To be used in conjunction with the --file flag"
   )
   .option("-o, --overwrite", "Update the document by replace its existing data")
   .description("Update document in a collection")
@@ -43,8 +47,8 @@ program
     "Read input from a file. Unless the --file-type flag is set, the file is assumed to be in JSON format"
   )
   .option(
-    "--custom-ids [VALUE...]",
-    "Allows the customization of the document id for bulk addition of documents. Must be used in conjunction with the --bulk flag or an error occurs"
+    "--file-type <VALUE>",
+    "Specify the file type of the input file. To be used in conjunction with the --file flag"
   )
   .description("Delete document(s) from a collection")
   .action(deleteDoc.bind(null, program.opts()));
@@ -55,6 +59,10 @@ program
   .option(
     "-f --file <VALUE>",
     "Read input from a file. Unless the --file-type flag is set, the file is assumed to be in JSON format"
+  )
+  .option(
+    "--file-type <VALUE>",
+    "Specify the file type of the input file. To be used in conjunction with the --file flag"
   )
   .option(
     "--custom-id <VALUE>",
