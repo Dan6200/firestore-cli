@@ -1,10 +1,11 @@
 //cspell:disable
 import ora from "ora";
 import { Options } from "commander";
-import { authenticateFirestore } from "./auth-1.mjs";
+import { authenticateFirestore } from "./auth/service-account.mjs";
 import { handleSecretKey } from "./utils/auth.mjs";
 import { existsSync } from "fs";
 import { resolve } from "path";
+import { CLI_LOG } from "./utils/logging.mjs";
 
 export default async (
   globalOptions: Options,
@@ -64,6 +65,6 @@ export default async (
     spinner.succeed("Done!");
   } catch (e) {
     spinner.fail("Failed to fetch documents!");
-    console.error(e);
+    CLI_LOG(e.toString(), "error");
   }
 };

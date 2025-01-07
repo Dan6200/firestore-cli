@@ -2,7 +2,9 @@ import { Command } from "commander";
 
 declare module "commander" {
   interface Options {
-    serviceAccount: string;
+    serviceAccount?: string;
+    credentials?: string;
+    useServiceAcc?: boolean;
     databaseId?: string;
     where?: Condition;
     json?: boolean;

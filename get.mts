@@ -2,7 +2,7 @@
 import { Chalk } from "chalk";
 import ora from "ora";
 import { Options } from "commander";
-import { authenticateFirestore } from "./auth-1.mjs";
+import { authenticateFirestore } from "./auth/service-account.mjs";
 import { handleSecretKey } from "./utils/auth.mjs";
 import { printDocuments } from "./utils/print.mjs";
 import {
@@ -12,6 +12,7 @@ import {
 } from "firebase-admin/firestore";
 import { initializePager } from "./init-pager.mjs";
 import handleWhereClause from "./utils/handle-where-clause.mjs";
+import { CLI_LOG } from "./utils/logging.mjs";
 
 const chalk = new Chalk({ level: 3 });
 
@@ -25,13 +26,9 @@ export default async (
   if (collection) ({ pager, failedToStartPager } = initializePager());
   const spinner = ora("Fetching documents from " + collection + "\n").start();
   try {
-    const serviceAccount = handleSecretKey(globalOptions.serviceAccount);
-    const db = await authenticateFirestore(
-      serviceAccount,
-      globalOptions.databaseId
-    );
+    const db = authenticateHelper(globalOptions);
     let snapshot: null | QuerySnapshot = null;
-    if (options.where.length > 0) {
+    if (options.where?.length > 0) {
       let ref: CollectionReference | Query = db.collection(collection);
       snapshot = await handleWhereClause(ref, options.where).get();
     } else {
@@ -40,7 +37,7 @@ export default async (
 
     if (snapshot?.empty) {
       spinner.succeed("Done!");
-      console.log("[]");
+      process.stdout.write("[]");
       return;
     }
     if (failedToStartPager) {
@@ -62,12 +59,12 @@ export default async (
       );
     if (!failedToStartPager) {
       spinner.succeed("Done!");
-      await new Promise(() => setTimeout(() => null, 250));
+      //await new Promise(() => setTimeout(() => null, 250));
     }
     if (!failedToStartPager) pager.stdin.write(stdOutput);
   } catch (e) {
     spinner.fail("Failed to fetch documents!");
-    console.error(e);
+    CLI_LOG(e.toString(), "error");
   } finally {
     if (!failedToStartPager) pager.stdin.end();
   }

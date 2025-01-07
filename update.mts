@@ -1,11 +1,12 @@
 //cspell:disable
 import ora from "ora";
 import { Options } from "commander";
-import { authenticateFirestore } from "./auth-1.mjs";
+import { authenticateFirestore } from "./auth/service-account.mjs";
 import { handleSecretKey } from "./utils/auth.mjs";
 import { existsSync } from "fs";
 import { resolve } from "path";
 import { formatData, validateFileInput } from "./utils/data-mutation.mjs";
+import { CLI_LOG } from "./utils/logging.mjs";
 
 // TODO: Must support the JSON file option with contains both the new data and doc ids.
 export default async (
@@ -23,7 +24,7 @@ export default async (
     throw new Error(
       "Must provide data or a file containing the data to update document."
     );
-  //const spinner = ora("Updating document(s) in " + collection + "\n").start();
+  const spinner = ora("Updating document(s) in " + collection + "\n").start();
   let parsedData = null;
   try {
     const serviceAccount = handleSecretKey(globalOptions.serviceAccount);
@@ -94,9 +95,9 @@ export default async (
           options.overwrite ? { merge: false } : { merge: true }
         );
     }
-    //spinner.succeed("Done!");
+    spinner.succeed("Done!");
   } catch (e) {
-    //spinner.fail("Failed to fetch documents!");
-    console.error(e);
+    spinner.fail("Failed to fetch documents!");
+    CLI_LOG(e.toString(), "error");
   }
 };
