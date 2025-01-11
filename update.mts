@@ -1,12 +1,11 @@
 //cspell:disable
 import ora from "ora";
 import { Options } from "commander";
-import { authenticateFirestore } from "./auth/service-account.mjs";
-import { handleSecretKey } from "./utils/auth.mjs";
 import { existsSync } from "fs";
 import { resolve } from "path";
 import { formatData, validateFileInput } from "./utils/data-mutation.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
+import { authenticateHelper } from "./utils/auth.mjs";
 
 // TODO: Must support the JSON file option with contains both the new data and doc ids.
 export default async (
@@ -27,11 +26,7 @@ export default async (
   const spinner = ora("Updating document(s) in " + collection + "\n").start();
   let parsedData = null;
   try {
-    const serviceAccount = handleSecretKey(globalOptions.serviceAccount);
-    const db = await authenticateFirestore(
-      serviceAccount,
-      globalOptions.databaseId
-    );
+    const db = await authenticateHelper(globalOptions);
     let dataToUpdate: any = null;
     if (options.file) {
       const inputFile = options.file;

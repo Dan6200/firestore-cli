@@ -4,6 +4,7 @@ import { createInterface } from "readline/promises";
 import { resolve } from "path";
 import { TOKEN_PATH } from "./file-paths.mjs";
 import { CLI_LOG } from "../utils/logging.mjs";
+import { handleAuthFile } from "../utils/auth.mjs";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/datastore",
@@ -12,10 +13,13 @@ const SCOPES = [
 ];
 
 // Load client secrets from a local file
-async function authorize(credentialsPath: string) {
-  const { default: credentials } = await import(resolve(credentialsPath), {
-    assert: { type: "json" },
-  });
+export async function oAuth2(credentialsPath?: string) {
+  const { default: credentials } = await import(
+    credentialsPath ? resolve(credentialsPath) : handleAuthFile("Credentials"),
+    {
+      assert: { type: "json" },
+    }
+  );
   const { client_id, client_secret, redirect_uris } = credentials.installed;
   const oAuth2Client = new OAuth2Client(
     client_id,
@@ -55,14 +59,6 @@ async function getAccessToken(oAuth2Client: OAuth2Client) {
 
   // Store the token for future use
   fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens));
-  CLI_LOG("Token stored to: " + TOKEN_PATH, "log");
+  CLI_LOG("Token stored to: " + TOKEN_PATH);
   return oAuth2Client;
 }
-
-// Example usage
-//async function main() {
-//  const auth = await authorize();
-//  CLI_LOG("Authentication successful: " + auth?.credentials, { log: true });
-//}
-
-//main();

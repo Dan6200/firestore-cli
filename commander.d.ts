@@ -3,8 +3,7 @@ import { Command } from "commander";
 declare module "commander" {
   interface Options {
     serviceAccount?: string;
-    credentials?: string;
-    useServiceAcc?: boolean;
+    userService?: boolean;
     databaseId?: string;
     where?: Condition;
     json?: boolean;
@@ -15,6 +14,12 @@ declare module "commander" {
     customId?: string;
     customIds?: string[];
     overwrite?: boolean;
+    billingAccountId?: string;
+    createProject?: boolean;
+    projectName?: string;
+    enableFirestore?: string;
+    linkBilling?: boolean;
+    locationId: string;
   }
   type WhereClause = [string, WhereCondition, any];
   type OrClause = ["or" | "OR", ...WhereClause];

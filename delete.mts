@@ -1,11 +1,10 @@
 //cspell:disable
 import ora from "ora";
 import { Options } from "commander";
-import { authenticateFirestore } from "./auth/service-account.mjs";
-import { handleSecretKey } from "./utils/auth.mjs";
 import { existsSync } from "fs";
 import { resolve } from "path";
 import { CLI_LOG } from "./utils/logging.mjs";
+import { authenticateHelper } from "./utils/auth.mjs";
 
 export default async (
   globalOptions: Options,
@@ -20,11 +19,7 @@ export default async (
     );
   }
   try {
-    const serviceAccount = handleSecretKey(globalOptions.serviceAccount);
-    const db = await authenticateFirestore(
-      serviceAccount,
-      globalOptions.databaseId
-    );
+    const db = await authenticateHelper(globalOptions);
     if (options.file) {
       const inputFile = options.file;
       if (!existsSync(inputFile)) {

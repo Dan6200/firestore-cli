@@ -1,19 +1,18 @@
 import { Chalk } from "chalk";
 const chalk = new Chalk({ level: 3 });
 
-type LogLevel = "info" | "log" | "error";
+type LogLevel = "info" | "error";
 
-export function CLI_LOG(str: string, level: LogLevel = "info") {
+export function CLI_LOG(obj: any, level?: LogLevel) {
   switch (level) {
     case "error":
-      console.error(chalk.bgRed(" ERROR: ") + chalk.red(` ${str}`));
-      break;
-    case "log":
-      console.log(chalk.bgGreen(" LOG: ") + chalk.green(` ${str}`));
+      console.error(chalk.bgRed(" ERROR: ") + chalk.red(` ${obj}`));
       break;
     case "info":
+      console.log(chalk.bgWhite.black(" INFO: ") + chalk.white(` ${obj}`));
+      break;
     default:
-      console.log(chalk.bgWhite.black(" INFO: ") + chalk.white(` ${str}`));
+      console.log(chalk.bgGreen(" LOG: ") + chalk.green(` ${obj}`));
       break;
   }
 }

@@ -16,6 +16,5 @@ export async function authenticateFirestore(
   const app = initializeApp({
     credential: fbAdmin.credential.cert(serviceAccount as ServiceAccount),
   });
-  // TOD0: remove "staging" in production
   return initializeFirestore(app, {}, dbId);
 }

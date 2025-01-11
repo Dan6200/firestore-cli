@@ -6,6 +6,8 @@ import deleteDoc from "./delete.mjs";
 import whereOptionParser from "./utils/where-option-parser.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
 import { init } from "./init.mjs";
+import { setProject } from "./set-project.mjs";
+import { enableFirestoreAndLinkBilling } from "./enable-firestore-and-link-billing.mjs";
 const program = new Command();
 
 try {
@@ -14,11 +16,6 @@ try {
     .description("CLI tool to query google cloud firebase firestore database")
     .version("1.0.0")
     .option("--credentials <VALUE>")
-    .option("--use-service")
-    .option(
-      "--service-account <VALUE>",
-      "Filepath to the service account JSON key file for authentication.\nIf this is not provided and the --use-service flag is used then the program looks for the Service Account key in the `~/.config/firestore-cli/service-account/` directory."
-    )
     .option("--database-id <VALUE>", "Specifies the database Id")
     .option(
       "--pager <VALUE>",
@@ -30,7 +27,49 @@ try {
     );
 
   program
+    .command("init")
+    .description("Initializes Firestore CLI.")
+    .action(init);
+
+  program
+    .command("set [project-id]")
+    .description("Sets the project to be used with Firestore CLI.")
+    .option(
+      "--createProject",
+      "Creates a project with the ID `project-id` passed in as the argument to this command. Else it finds the existing project with ID `project-id`. To be used in conjunction with the --projectName flag"
+    )
+    .option(
+      "--projectName <VALUE>",
+      "The project name of the project to be created. Must be used in conjunction with the --createProject flag."
+    )
+    .action(setProject);
+
+  program
+    .command("firestore enable [project-id]")
+    .description(
+      "Enables firestore for the project. To be used in conjunction with the --billing-account-id or the --no-link-billing flag."
+    )
+    .option(
+      "--billing-account-id",
+      "Provides the billing account ID to enable cloud billing for firestore."
+    )
+    .option(
+      "--no-link-billing",
+      "Option to create firestore database without linking billing account. If creating additional databases other than `(default)`, a billing account must be set."
+    )
+    .option(
+      "--location-id <VALUE>",
+      "Location to set the new database. Example: --location-id nam5"
+    )
+    .action(enableFirestoreAndLinkBilling);
+
+  program
     .command("add <collection> [new-document-data]")
+    .option("--use-service", "Option to use service account instead of OAuth2")
+    .option(
+      "--service-account <VALUE>",
+      "Filepath to the service account JSON key file for authentication.\nIf this is not provided and the --use-service flag is used then the program looks for the Service Account key in the `~/.config/firestore-cli/service-account/` directory."
+    )
     .option("-b, --bulk", "Perform bulk add operations")
     .option(
       "-f --file <VALUE>",
@@ -51,10 +90,13 @@ try {
     .description("Add document to a collection")
     .action(add.bind(null, program.opts()));
 
-  program.command("init").action(init);
-
   program
     .command("get <collection>")
+    .option("--use-service", "Option to use service account instead of OAuth2")
+    .option(
+      "--service-account <VALUE>",
+      "Filepath to the service account JSON key file for authentication.\nIf this is not provided and the --use-service flag is used then the program looks for the Service Account key in the `~/.config/firestore-cli/service-account/` directory."
+    )
     .option(
       "-w, --where [VALUE...]",
       "Specify filtering conditions for querying documents. Provide a space-separated list of arguments in the format:\n`<field> <operator> <value>`. Supported operators include: `==`, `!=`, `<`, `<=`, `>`, `>=`, `array-contains`,\n`array-contains-any`, `in`, and `not-in`. If specifying a numeric value as a string, enclose it in nested quotes.\nExample: `-w id '==' '\"22\"' and age '>' 18  or status '==' active`",
@@ -71,6 +113,11 @@ try {
 
   program
     .command("update <collection> [data] [document-id...]")
+    .option("--use-service", "Option to use service account instead of OAuth2")
+    .option(
+      "--service-account <VALUE>",
+      "Filepath to the service account JSON key file for authentication.\nIf this is not provided and the --use-service flag is used then the program looks for the Service Account key in the `~/.config/firestore-cli/service-account/` directory."
+    )
     .option("-b, --bulk", "Perform bulk update operations")
     .option(
       "-f --file <VALUE>",
@@ -90,6 +137,11 @@ try {
   program
     .command("delete <collection> [document-ids...]")
     .option("-b, --bulk", "Perform bulk add operations")
+    .option("--use-service", "Option to use service account instead of OAuth2")
+    .option(
+      "--service-account <VALUE>",
+      "Filepath to the service account JSON key file for authentication.\nIf this is not provided and the --use-service flag is used then the program looks for the Service Account key in the `~/.config/firestore-cli/service-account/` directory."
+    )
     .option(
       "-f --file <VALUE>",
       "Read input from a file. Unless the --file-type flag is set, the file is assumed to be in JSON format"
@@ -101,7 +153,7 @@ try {
     .description("Delete document(s) from a collection")
     .action(deleteDoc.bind(null, program.opts()));
 } catch (error) {
-  CLI_LOG(error.toString(), "error");
+  CLI_LOG("Encountered an error!", "error");
 }
 
 export { program };

@@ -2,8 +2,7 @@
 import { Chalk } from "chalk";
 import ora from "ora";
 import { Options } from "commander";
-import { authenticateFirestore } from "./auth/service-account.mjs";
-import { handleSecretKey } from "./utils/auth.mjs";
+import { authenticateHelper } from "./utils/auth.mjs";
 import { printDocuments } from "./utils/print.mjs";
 import {
   CollectionReference,
@@ -26,7 +25,7 @@ export default async (
   if (collection) ({ pager, failedToStartPager } = initializePager());
   const spinner = ora("Fetching documents from " + collection + "\n").start();
   try {
-    const db = authenticateHelper(globalOptions);
+    const db = await authenticateHelper(globalOptions);
     let snapshot: null | QuerySnapshot = null;
     if (options.where?.length > 0) {
       let ref: CollectionReference | Query = db.collection(collection);
@@ -59,7 +58,7 @@ export default async (
       );
     if (!failedToStartPager) {
       spinner.succeed("Done!");
-      //await new Promise(() => setTimeout(() => null, 250));
+      await new Promise(() => setTimeout(() => null, 250));
     }
     if (!failedToStartPager) pager.stdin.write(stdOutput);
   } catch (e) {
