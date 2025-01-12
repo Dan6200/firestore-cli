@@ -5,9 +5,11 @@ import update from "./update.mjs";
 import deleteDoc from "./delete.mjs";
 import whereOptionParser from "./utils/where-option-parser.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
-import { init } from "./init.mjs";
+import { configureEnv } from "./configure-env.mjs";
 import { setProject } from "./set-project.mjs";
 import { enableFirestoreAndLinkBilling } from "./enable-firestore-and-link-billing.mjs";
+import { SERVICE_ACCOUNT } from "./auth/file-paths.mjs";
+import { createServiceAccountWithKey } from "./create-service-account.mjs";
 const program = new Command();
 
 try {
@@ -28,11 +30,17 @@ try {
 
   program
     .command("init")
-    .description("Initializes Firestore CLI.")
-    .action(init);
+    .description(
+      "Walk through to set up Firestore CLI for your project. Configures environment then sets up project to be used with Firestore CLI."
+    );
 
   program
-    .command("set [project-id]")
+    .command("configure-env")
+    .description("Configures the environment for Firestore CLI.")
+    .action(configureEnv);
+
+  program
+    .command("set-project <project-id>")
     .description("Sets the project to be used with Firestore CLI.")
     .option(
       "--createProject",
@@ -45,7 +53,7 @@ try {
     .action(setProject);
 
   program
-    .command("firestore enable [project-id]")
+    .command("enable-firestore <project-id>")
     .description(
       "Enables firestore for the project. To be used in conjunction with the --billing-account-id or the --no-link-billing flag."
     )
@@ -64,11 +72,18 @@ try {
     .action(enableFirestoreAndLinkBilling);
 
   program
+    .command("service-account-create <project-id>")
+    .description(
+      `Creates a new service account and generate a new service account key. Saves the key file at \`${SERVICE_ACCOUNT}\`.`
+    )
+    .option("--overwrite", "Overwrite any existing service account key if any")
+    .action(createServiceAccountWithKey);
+
+  program
     .command("add <collection> [new-document-data]")
-    .option("--use-service", "Option to use service account instead of OAuth2")
     .option(
       "--service-account <VALUE>",
-      "Filepath to the service account JSON key file for authentication.\nIf this is not provided and the --use-service flag is used then the program looks for the Service Account key in the `~/.config/firestore-cli/service-account/` directory."
+      `Filepath to the service account JSON key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT}\` directory.`
     )
     .option("-b, --bulk", "Perform bulk add operations")
     .option(
@@ -92,10 +107,9 @@ try {
 
   program
     .command("get <collection>")
-    .option("--use-service", "Option to use service account instead of OAuth2")
     .option(
       "--service-account <VALUE>",
-      "Filepath to the service account JSON key file for authentication.\nIf this is not provided and the --use-service flag is used then the program looks for the Service Account key in the `~/.config/firestore-cli/service-account/` directory."
+      `Filepath to the service account JSON key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT}\` directory.`
     )
     .option(
       "-w, --where [VALUE...]",
@@ -113,10 +127,9 @@ try {
 
   program
     .command("update <collection> [data] [document-id...]")
-    .option("--use-service", "Option to use service account instead of OAuth2")
     .option(
       "--service-account <VALUE>",
-      "Filepath to the service account JSON key file for authentication.\nIf this is not provided and the --use-service flag is used then the program looks for the Service Account key in the `~/.config/firestore-cli/service-account/` directory."
+      `Filepath to the service account JSON key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT}\` directory.`
     )
     .option("-b, --bulk", "Perform bulk update operations")
     .option(
@@ -137,10 +150,9 @@ try {
   program
     .command("delete <collection> [document-ids...]")
     .option("-b, --bulk", "Perform bulk add operations")
-    .option("--use-service", "Option to use service account instead of OAuth2")
     .option(
       "--service-account <VALUE>",
-      "Filepath to the service account JSON key file for authentication.\nIf this is not provided and the --use-service flag is used then the program looks for the Service Account key in the `~/.config/firestore-cli/service-account/` directory."
+      `Filepath to the service account JSON key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT}\` directory.`
     )
     .option(
       "-f --file <VALUE>",
@@ -154,6 +166,7 @@ try {
     .action(deleteDoc.bind(null, program.opts()));
 } catch (error) {
   CLI_LOG("Encountered an error!", "error");
+  program.exitOverride(error);
 }
 
 export { program };

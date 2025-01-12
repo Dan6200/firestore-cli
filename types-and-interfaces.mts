@@ -5,7 +5,10 @@ export interface MockChalk {
   yellow: jest.Mock<string, [string]>;
 }
 
-export interface Options {
-  databaseId?: string;
-  where?: [string, "==" | ">=" | "<=" | "!=", string];
-}
+export type Choice<Value> = {
+  value: Value;
+  name?: string;
+  description?: string;
+  short?: string;
+  disabled?: boolean | string;
+};

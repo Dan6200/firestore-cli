@@ -1,10 +1,10 @@
-import { handleSecretKey } from "./utils/auth.mjs";
+import { handleAuthFile } from "./utils/auth.mjs";
 import handleWhereClause from "./utils/handle-where-clause.mjs";
 import { printDocuments, printObj } from "./utils/print.mjs";
 import { jest } from "@jest/globals";
 import { MockChalk } from "./types-and-interfaces.mjs";
-import { authenticateFirestore } from "./auth-1.mjs";
 import { CollectionReference, Firestore } from "firebase-admin/firestore";
+import { authenticateFirestore } from "./auth/service-account.mjs";
 
 const chalk: MockChalk = {
   green: jest.fn((text: string) => text),
@@ -76,7 +76,7 @@ describe("`handleWhereClause` function", () => {
   let ref: CollectionReference | null = null;
   let db: Firestore | null = null;
   beforeAll(async () => {
-    const serviceAccount = handleSecretKey(null);
+    const serviceAccount = handleAuthFile(null);
     db = await authenticateFirestore(serviceAccount);
     ref = db.collection("users");
     const batch = db.batch();

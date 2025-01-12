@@ -2,40 +2,38 @@
 import { Firestore } from "@google-cloud/firestore";
 import { CloudBillingClient } from "@google-cloud/billing";
 import { JSONClient } from "google-auth-library/build/src/auth/googleauth.js";
-import { existsSync, statSync } from "fs";
 import { JWT, OAuth2Client } from "google-auth-library";
 import { google } from "googleapis";
 import { CREDENTIALS } from "../auth/file-paths.mjs";
-import { handleAuthFile } from "./auth.mjs";
 import { CLI_LOG } from "./logging.mjs";
-
-const SCOPES = [
-  "https://www.googleapis.com/auth/datastore",
-  "https://www.googleapis.com/auth/cloud-platform",
-  "https://www.googleapis.com/auth/devstorage.read_write",
-];
+import { getInput } from "./interactive.mjs";
+import { saveKeyToFile } from "./msc.mjs";
+import ora from "ora";
+import { Options } from "commander";
+import { oAuth2 } from "../auth/oauth2.mjs";
+import parentProjectId from "../auth/parent-project-id.mjs";
 
 export const enableFirestoreAPI = async (
   auth: OAuth2Client,
   projectId: string
 ) => {
   //
-  CLI_LOG("Enabling Firestore API...");
+  const spinner = ora("Enabling Firestore API...").start();
   try {
-    //const auth = googleAuthenticate();
-    //const authClient = await auth.getClient();
     const serviceUsage = google.serviceusage("v1");
-    const { data: operation } = await serviceUsage.services.enable({
-      auth: auth as JWT,
-      name: `projects/${projectId}/services/firestore.googleapis.com`,
-    });
-    if (operation.done) CLI_LOG("Firestore API enabled");
-    else
-      CLI_LOG(
-        "Firestore API enablement is in progress...Wait a few minutes and retry with the exact same input"
-      );
-    return operation.done;
+    let done = false;
+    while (!done) {
+      ({
+        data: { done },
+      } = await serviceUsage.services.enable({
+        auth: auth as JWT,
+        name: `projects/${projectId}/services/firestore.googleapis.com`,
+      }));
+    }
+    spinner.succeed("Firestore API enabled");
+    return done;
   } catch (e) {
+    spinner.fail();
     CLI_LOG("Failed to enable Firestore API..." + e, "error");
     throw e;
   }
@@ -46,55 +44,88 @@ export const enableCloudResourceManAPI = async (
   projectId: string
 ) => {
   //
-  CLI_LOG("Enabling Cloud Resource Manager API...");
+  const spinner = ora("Enabling Cloud Resource Manager API...").start();
   try {
     const serviceUsage = google.serviceusage("v1");
-    const { data: operation } = await serviceUsage.services.enable({
-      auth: authClient,
-      name: `projects/${projectId}/services/cloudresourcemanager.googleapis.com`,
-    });
-    if (operation.done) CLI_LOG("Cloud Resource Manager API enabled...");
-    else CLI_LOG("Cloud Resource Manager API enablement is in progress...");
+    let done = false;
+    while (!done) {
+      ({
+        data: { done },
+      } = await serviceUsage.services.enable({
+        auth: authClient,
+        name: `projects/${projectId}/services/cloudresourcemanager.googleapis.com`,
+      }));
+    }
+    if (done) spinner.succeed("Cloud Resource Manager API enabled...");
   } catch (e) {
+    spinner.fail();
     CLI_LOG("Failed to enable Cloud Resource Manager API..." + e, "error");
     throw e;
   }
 };
 
-export const enableCloudBillingAPI = async (projectId: string) => {
+export const enableIAMAPI = async (
+  authClient: OAuth2Client,
+  projectId: string,
+  parent?: boolean
+) => {
   //
-  CLI_LOG(`Enabling Cloud Billing API for project ${projectId}...`);
+  let spinner;
+  if (parent)
+    spinner = ora(`Enabling IAM API for the parent project...`).start();
+  else spinner = ora(`Enabling IAM API for project ${projectId}...`).start();
   try {
-    const auth = googleAuthenticate();
-    const authClient = await auth.getClient();
     const serviceUsage = google.serviceusage("v1");
-    const { data: operation } = await serviceUsage.services.enable({
-      auth: authClient as JWT,
-      name: `projects/${projectId}/services/cloudbilling.googleapis.com`,
-    });
-    if (operation.done) CLI_LOG("Cloud Billing API enabled...");
-    else CLI_LOG("Cloud Billing API enablement is in progress...");
+    let done = false;
+    while (!done) {
+      ({
+        data: { done },
+      } = await serviceUsage.services.enable({
+        auth: authClient as JWT,
+        name: `projects/${projectId}/services/iam.googleapis.com`,
+      }));
+    }
+    if (done) spinner.succeed("IAM API enabled...");
   } catch (e) {
-    CLI_LOG("Failed to enable Cloud Billing API..." + e, "error");
-    throw e;
+    spinner.fail();
+    CLI_LOG("Failed to enable IAM API..." + e, "error");
+    process.exitCode = 1;
   }
 };
 
-function googleAuthenticate() {
-  const keyFile = handleAuthFile("Service Account");
-  if (!existsSync(keyFile) || statSync(keyFile).isDirectory()) {
-    throw new Error(`Service account key file is invalid: ${keyFile}`);
-  }
+export const enableCloudBillingAPI = async (
+  auth: OAuth2Client,
+  projectId: string,
+  parent?: boolean
+) => {
+  //
+  let spinner;
+  if (parent)
+    spinner = ora(
+      `Enabling Cloud Billing API for the parent project...`
+    ).start();
+  else
+    spinner = ora(
+      `Enabling Cloud Billing API for project ${projectId}...`
+    ).start();
   try {
-    return new google.auth.GoogleAuth({
-      keyFile,
-      scopes: [SCOPES[1]],
-    });
+    const serviceUsage = google.serviceusage("v1");
+    let done = false;
+    while (!done) {
+      ({
+        data: { done },
+      } = await serviceUsage.services.enable({
+        auth: auth,
+        name: `projects/${projectId}/services/cloudbilling.googleapis.com`,
+      }));
+    }
+    if (done) spinner.succeed("Cloud Billing API enabled...");
   } catch (e) {
-    CLI_LOG("Failed Google authentication: " + e, "error");
-    throw e;
+    spinner.fail();
+    CLI_LOG("Failed to enable Cloud Billing API..." + e, "error");
+    process.exitCode = 1;
   }
-}
+};
 
 export function configureFirestore(projectId: string) {
   //
@@ -110,7 +141,100 @@ export function configureFirestore(projectId: string) {
     CLI_LOG("Firestore database configured");
   } catch (e) {
     CLI_LOG("Failed to configure Firestore database..." + e, "error");
-    throw e;
+    process.exitCode = 1;
+  }
+}
+
+export async function createServiceAccountKey(
+  auth: OAuth2Client,
+  serviceAccountName: string,
+  keyFileName: string
+) {
+  //
+  if (!serviceAccountName) {
+    CLI_LOG(
+      "Failed to create service key: Must provide the service account name",
+      "error"
+    );
+    throw new Error();
+  }
+  const iamAdmin = google.iam("v1");
+  const spinner = ora("Creating Service Account...").start();
+  try {
+    const { data: serviceAccountKey } =
+      await iamAdmin.projects.serviceAccounts.keys.create({
+        auth,
+        name: serviceAccountName,
+      });
+    if (serviceAccountKey.name) {
+      spinner.succeed("Service account key created.");
+      CLI_LOG(
+        "Valid After: " + new Date(serviceAccountKey.validAfterTime),
+        "info"
+      );
+      CLI_LOG(
+        "Valid Before: " + new Date(serviceAccountKey.validBeforeTime),
+        "info"
+      );
+      saveKeyToFile(
+        serviceAccountKey.privateKeyData,
+        serviceAccountKey.validAfterTime,
+        keyFileName
+      );
+      return serviceAccountKey.name;
+    }
+    throw new Error(`Invalid respone ${serviceAccountKey}`);
+  } catch (e) {
+    spinner.fail();
+    CLI_LOG("Failed to create Service account: " + e, "error");
+    process.exitCode = 1;
+  }
+}
+
+export async function createServiceAccount(
+  auth: OAuth2Client,
+  projectId: string
+) {
+  //
+  // Creating Service Account...  //
+  const serviceAccountId = await getInput("Service Account ID"),
+    serviceAccDisplayName = await getInput("Service Account Display Name"),
+    serviceAccountDescription = await getInput("Service Account Description");
+  //
+  if (!serviceAccountId || !serviceAccDisplayName) {
+    CLI_LOG(
+      "Failed to create service account: Must provide a service account ID and a service account display name",
+      "error"
+    );
+    throw new Error();
+  }
+  const iamAdmin = google.iam("v1");
+  const spinner = ora("Creating Service Acount...").start();
+  try {
+    const serviceAccountReq = serviceAccountDescription
+      ? {
+          description: serviceAccountDescription,
+          displayName: serviceAccDisplayName,
+        }
+      : {
+          displayName: serviceAccDisplayName,
+        };
+    const { data: serviceAccount } =
+      await iamAdmin.projects.serviceAccounts.create({
+        auth,
+        name: `projects/${projectId}`,
+        requestBody: {
+          accountId: serviceAccountId,
+          serviceAccount: serviceAccountReq,
+        },
+      });
+    if (serviceAccount.name) spinner.succeed("Service account created.");
+    else throw new Error(`Invalid respone ${serviceAccount}`);
+    return serviceAccount.name;
+  } catch (e) {
+    spinner.fail();
+    CLI_LOG("Failed to create Service account: " + e, "error");
+    process.exitCode = 1;
   }
 }
 
@@ -129,33 +253,37 @@ export async function createFirestoreDatabase(
     );
     throw new Error();
   }
-  CLI_LOG("Creating Firestore database...");
+  const spinner = ora("Creating Firestore database...").start();
   try {
-    const { data: operation } = await firestoreAdmin.projects.databases.create({
-      auth,
-      requestBody: {
-        type: "FIRESTORE_NATIVE",
-        locationId: locationId ?? "nam5",
-      },
-      parent: `projects/${projectId}`,
-      databaseId: "(default)",
-    });
-    if (operation.done) CLI_LOG("Firestore database created.");
-    else CLI_LOG("Firestore database creation is in progress...");
+    let done = false;
+    while (!done) {
+      ({
+        data: { done },
+      } = await firestoreAdmin.projects.databases.create({
+        auth,
+        requestBody: {
+          type: "FIRESTORE_NATIVE",
+          locationId: locationId ?? "nam5",
+        },
+        parent: `projects/${projectId}`,
+        databaseId: "(default)",
+      }));
+    }
+    spinner.succeed("Firestore database created.");
+    return done;
   } catch (e) {
     CLI_LOG("Failed to create Firestore database: " + e, "error");
-    throw e;
+    process.exitCode = 1;
   }
 }
 
 export async function linkCloudBillingAccount(
+  authClient: OAuth2Client,
   projectId: string,
   billingAccountId: string
 ) {
   let billingClient;
-  CLI_LOG("Linking billing account...");
-  const auth = googleAuthenticate();
-  const authClient = await auth.getClient();
+  const spinner = ora("Linking billing account...").start();
   try {
     billingClient = new CloudBillingClient({
       authClient: authClient as JSONClient,
@@ -165,11 +293,7 @@ export async function linkCloudBillingAccount(
   }
   //
   try {
-    //const [accounts] = await billingClient.listBillingAccounts({
-    //  name: `projects/${projectId}`,
-    //});
-    //console.log(accounts);
-    const result = await billingClient.updateProjectBillingInfo({
+    const [{ name }] = await billingClient.updateProjectBillingInfo({
       name: `projects/${projectId}`,
       projectBillingInfo: {
         billingAccountName: `billingAccounts/${billingAccountId}`,
@@ -177,20 +301,96 @@ export async function linkCloudBillingAccount(
       },
     });
     //
-    console.log(result);
-    CLI_LOG("Billing account linked.");
+    if (!name) throw new Error("Invalid response when updating billing info");
+    spinner.succeed("Billing account linked.");
+    return name;
   } catch (e) {
-    throw new Error("Error linking billing account: " + e);
+    spinner.fail();
+    CLI_LOG("Error linking billing account: " + e.message, "error");
+    process.exitCode = 1;
   }
 }
 
-export async function getGoogleAuthClient() {
-  let authClient;
-  try {
-    const auth = googleAuthenticate();
-    authClient = await auth.getClient();
-  } catch (e) {
-    throw new Error("Failed to retrieve auth client:\n" + e);
-  }
-  return authClient;
+export async function enableFirestore(
+  projectId: string,
+  { locationId }: Options
+) {
+  const oAuthClient = await oAuth2();
+  const done = await enableFirestoreAPI(oAuthClient, projectId);
+  if (!done) return;
+  await createFirestoreDatabase(oAuthClient, projectId, locationId);
 }
+
+export async function enableAndLinkBillingAccount(
+  projectId: string,
+  billingAccountId: string
+) {
+  const oAuthClient = await oAuth2();
+  await enableCloudBillingAPI(oAuthClient, await parentProjectId, true);
+  await linkCloudBillingAccount(oAuthClient, projectId, billingAccountId);
+}
+
+export async function createProject(
+  projectId: string,
+  projectName: string,
+  parentType?: "folder" | "organization",
+  parentId?: string
+) {
+  const cloudResourceManager = google.cloudresourcemanager("v1");
+  let projectBody = null;
+  if (parentType)
+    projectBody = {
+      projectId,
+      name: projectName,
+      parent: {
+        type: parentType,
+        id: `${parentType}s/${parentId}`,
+      },
+    };
+  else projectBody = { projectId, name: projectName };
+  let spinner;
+  try {
+    const oAuthClient = await oAuth2();
+    await enableCloudResourceManAPI(oAuthClient, await parentProjectId);
+    spinner = ora("Creating project...").start();
+    const createResponse = await cloudResourceManager.projects.create({
+      auth: oAuthClient,
+      requestBody: projectBody,
+    });
+    spinner.succeed("Project created: ");
+    const { done } = createResponse.data;
+    if (done === false) return done;
+    return projectId;
+  } catch (e) {
+    spinner.fail("Operation Failed!");
+    CLI_LOG("Error creating project: " + e, "error");
+    process.exitCode = 1;
+  }
+}
+
+//function googleAuthenticate() {
+//  const keyFile = handleAuthFile("Service Account");
+//  if (!existsSync(keyFile) || statSync(keyFile).isDirectory()) {
+//    throw new Error(`Service account key file is invalid: ${keyFile}`);
+//  }
+//  try {
+//    return new google.auth.GoogleAuth({
+//      keyFile,
+//      scopes: [SCOPES[1]],
+//    });
+//  } catch (e) {
+//    CLI_LOG("Failed Google authentication: " + e, "error");
+//    throw e;
+//  }
+//}
+
+//export async function getGoogleAuthClient() {
+//  let authClient;
+//  try {
+//    const auth = googleAuthenticate();
+//    authClient = await auth.getClient();
+//  } catch (e) {
+//    throw new Error("Failed to retrieve auth client:\n" + e);
+//  }
+//  return authClient;
+//}

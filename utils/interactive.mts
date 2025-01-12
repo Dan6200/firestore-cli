@@ -1,20 +1,27 @@
-import { createInterface } from "readline/promises";
+import { input, select } from "@inquirer/prompts";
+import { Choice } from "../types-and-interfaces.mjs";
 import { CLI_LOG } from "./logging.mjs";
 
-export async function getInput(prompt?: string) {
-  let rl;
+export async function getInput(message?: string) {
   try {
-    rl = createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
+    return await input({ message });
+  } catch (r) {
+    CLI_LOG(
+      `Failed retrieving ${message ?? "input"} from the user: ` + r.message,
+      "error"
+    );
+    process.exitCode = 1;
+  }
+}
 
-    const ID = await rl.question(`${prompt ?? ""}: `);
-    return ID;
-  } catch (e) {
-    CLI_LOG(`Failed retrieving ${prompt ?? ""} from the user: ` + e);
-    throw e;
-  } finally {
-    rl?.close();
+export async function selectOption(
+  choices: Choice<string>[],
+  message?: string
+) {
+  try {
+    return await select({ message, choices });
+  } catch (r) {
+    CLI_LOG(`Failed selecting options: ` + r.message, "error");
+    process.exitCode = 1;
   }
 }

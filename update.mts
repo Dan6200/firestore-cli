@@ -93,6 +93,7 @@ export default async (
     spinner.succeed("Done!");
   } catch (e) {
     spinner.fail("Failed to fetch documents!");
-    CLI_LOG(e.toString(), "error");
+    CLI_LOG(e.message, "error");
+    process.exitCode = 1;
   }
 };

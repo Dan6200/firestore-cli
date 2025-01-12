@@ -24,6 +24,7 @@ export default async (
     failedToStartPager = null;
   if (collection) ({ pager, failedToStartPager } = initializePager());
   const spinner = ora("Fetching documents from " + collection + "\n").start();
+  let error = false;
   try {
     const db = await authenticateHelper(globalOptions);
     let snapshot: null | QuerySnapshot = null;
@@ -63,8 +64,11 @@ export default async (
     if (!failedToStartPager) pager.stdin.write(stdOutput);
   } catch (e) {
     spinner.fail("Failed to fetch documents!");
-    CLI_LOG(e.toString(), "error");
+    CLI_LOG(e.message, "error");
+    console.error(e);
+    error = true;
   } finally {
     if (!failedToStartPager) pager.stdin.end();
+    if (error) process.exitCode = 1;
   }
 };

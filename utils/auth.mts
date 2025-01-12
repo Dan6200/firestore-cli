@@ -23,7 +23,7 @@ export function handleAuthFile(
       );
     const authFileDir = readdirSync(dirPath);
     const files = authFileDir.filter((file) => file.endsWith(".json"));
-    if (!files)
+    if (files.length === 0)
       throw new Error(
         `No ${
           isCred ? "OAuth Credentials JSON" : "Service Account key"

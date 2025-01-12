@@ -1,24 +1,34 @@
-import { existsSync, mkdirSync } from "fs";
-import {
-  APP_CONFIG_DIR,
-  CREDENTIALS,
-  SERVICE_ACCOUNT,
-} from "./auth/file-paths.mjs";
-import { CLI_LOG } from "./utils/logging.mjs";
+import { Options } from "commander";
+import { configureEnv } from "./configure-env.mjs";
+import { enableFirestoreAndLinkBilling } from "./enable-firestore-and-link-billing.mjs";
+import { enableAndLinkBillingAccount } from "./enable-firestore.mjs";
+import { setProject } from "./set-project.mjs";
+import { getInput } from "./utils/interactive.mjs";
 
-export async function init() {
-  const directories = [APP_CONFIG_DIR, CREDENTIALS, SERVICE_ACCOUNT];
-  let alreadyInit = true;
-  try {
-    directories.forEach((dir) => {
-      if (!existsSync(dir)) {
-        mkdirSync(dir, { recursive: true });
-        if (alreadyInit) alreadyInit = false;
-      }
-    });
-    if (!alreadyInit) CLI_LOG(`Successfully configured environment.`);
-    else CLI_LOG(`Environment already configured.`);
-  } catch (err) {
-    CLI_LOG(`Error initializing firestore-cli.`, "error");
+export async function init(options: Options) {
+  await configureEnv();
+  //
+  const projectId = await getInput("Project ID");
+  if (!projectId) throw new Error("Project ID cannot be empty");
+  if (!options.createProject) {
+    options.createProject = confirm("Create A New Project?");
+    if (options.createProject) {
+      const projectName = await getInput("Project Name");
+      if (!projectName) throw new Error("Project Name cannot be empty");
+      options.projectName = projectName;
+    }
   }
+  await setProject(projectId, options);
+  //
+  if (!options.linkBilling) {
+    options.linkBilling = confirm("Link Billing Account?");
+    if (options.linkBilling) {
+      const billingAccountId = await getInput("Billing Account ID");
+      if (!billingAccountId)
+        throw new Error("Billing Account ID cannot be empty");
+      options.billingAccountId = billingAccountId;
+    }
+  }
+  await enableFirestoreAndLinkBilling(projectId, options);
+  //
 }
