@@ -10,6 +10,7 @@ import { setProject } from "./set-project.mjs";
 import { enableFirestoreAndLinkBilling } from "./enable-firestore-and-link-billing.mjs";
 import { SERVICE_ACCOUNT } from "./auth/file-paths.mjs";
 import { createServiceAccountWithKey } from "./create-service-account.mjs";
+import { init } from "./init.mjs";
 const program = new Command();
 
 try {
@@ -23,7 +24,30 @@ try {
     .command("init")
     .description(
       "Walk through to set up Firestore CLI for your project. Configures environment then sets up project to be used with Firestore CLI."
-    );
+    )
+    .option(
+      "--create-project <project_name>",
+      "Creates a project with the ID <project-id> passed in as the argument to this command.\n<project-name>: The project name of the project to be created."
+    )
+    .option(
+      "--database-id <VALUE>",
+      "`database-id` is the optional argument for the name of the database.\nA billing account is required when creating databases other than `(default)`.",
+      "(default)"
+    )
+    .option(
+      "--billing-account-id <VALUE>",
+      "Provides the billing account ID to enable cloud billing for firestore."
+    )
+    .option(
+      "--location-id <VALUE>",
+      "Location to set the new database. Default is nam5.\nExample: --location-id nam5",
+      "nam5"
+    )
+    .option(
+      "--overwrite-key",
+      "Overwrite any existing service account key if any"
+    )
+    .action(init);
 
   program
     .command("configure-env")
@@ -46,7 +70,8 @@ try {
     .description("Enables firestore for the project.")
     .option(
       "--database-id <VALUE>",
-      "`database-id` is the optional argument for the name of the database.\nA billing account is required when creating databases other than `(default)`."
+      "`database-id` is the optional argument for the name of the database.\nA billing account is required when creating databases other than `(default)`.",
+      "(default)"
     )
     .option(
       "--billing-account-id <VALUE>",
@@ -64,7 +89,10 @@ try {
     .description(
       `Creates a new service account and generate a new service account key. Saves the key file at \`${SERVICE_ACCOUNT}\`.`
     )
-    .option("--overwrite", "Overwrite any existing service account key if any")
+    .option(
+      "--overwrite-key",
+      "Overwrite any existing service account key if any"
+    )
     .action(createServiceAccountWithKey);
 
   program

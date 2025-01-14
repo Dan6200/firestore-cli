@@ -30,11 +30,11 @@ export default async (collection: string, options: Options) => {
     } else {
       snapshot = await db.collection(collection).get();
     }
-
+    //
     if (failedToStartPager) {
       spinner.succeed("Done!");
     }
-
+    //
     let stdOutput = null;
     if (options.json) {
       const snapArray: any[] = [];

@@ -292,7 +292,7 @@ export async function createFirestoreDatabase(
           locationId: locationId,
         },
         parent: `projects/${projectId}`,
-        databaseId: databaseId ?? "(default)",
+        databaseId,
       }));
     }
     if (response) {
@@ -302,6 +302,11 @@ export async function createFirestoreDatabase(
     throw new Error(error.message);
   } catch (e) {
     spinner.fail();
+    if (e.message.match("Database already exists"))
+      CLI_LOG(
+        `Failed to create Firestore database: The database \`${databaseId}\` already exists. Please use another database.`,
+        `error`
+      );
     CLI_LOG("Failed to create Firestore database: " + e, "error");
     process.exitCode = 1;
   }

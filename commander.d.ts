@@ -14,6 +14,7 @@ declare module "commander" {
     customId?: string;
     customIds?: string[];
     overwrite?: boolean;
+    overwriteKey?: boolean;
     billingAccountId?: string;
     createProject?: boolean;
     projectName?: string;

@@ -29,12 +29,12 @@ export async function createServiceAccountWithKey(
           "Need to set project with the `set-project` command or include `project-id` as argument"
         );
     }
-    const keyFile = options.overwrite
+    const keyFile = options.overwriteKey
       ? handleAuthFile("Service Account")
       : undefined;
-    if (keyFile && existsSync(keyFile) && !options.overwrite) {
+    if (keyFile && existsSync(keyFile) && !options.overwriteKey) {
       CLI_LOG(
-        "Service Account key exists. Use the --overwrite flag to overwrite",
+        "Service Account key exists. Use the --overwrite-key flag to overwrite it.",
         "error"
       );
       throw new Error();

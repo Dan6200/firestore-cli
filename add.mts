@@ -24,9 +24,6 @@ export default async (collection: string, data: string, options: Options) => {
     const db = await authenticateHelper(options);
     let parsedData: object | null = null;
     if (options.file) {
-      console.log("runs");
-      process.exit(1);
-      // TODO:
       const inputFile = options.file;
       if (!existsSync(inputFile)) {
         throw new Error(
@@ -56,7 +53,7 @@ export default async (collection: string, data: string, options: Options) => {
         );
       const bulkData = parsedData;
       const batch = db.batch();
-      if (bulkData?.length !== customIds.length)
+      if (customIds && bulkData.length !== customIds.length)
         throw new Error(
           "Number of custom IDs must match the number of documents to be added"
         );
