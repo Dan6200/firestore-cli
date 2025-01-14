@@ -133,9 +133,37 @@ try {
     )
     .option(
       "-w, --where [VALUE...]",
-      "Specify filtering conditions for querying documents. Provide a space-separated list of arguments in the format:\n`<field> <operator> <value>`. Supported operators include: `==`, `!=`, `<`, `<=`, `>`, `>=`, `array-contains`,\n`array-contains-any`, `in`, and `not-in`. If specifying a numeric value as a string, enclose it in nested quotes.\nExample: `-w id '==' '\"22\"' and age '>' 18  or status '==' active`",
+      "Specify filtering conditions for querying documents. Provide a space-separated list of arguments in the format:\n`<field> <operator> <value>`. Supported operators include: `==`, `!=`, `<`, `<=`, `>`, `>=`, `array-contains`,\n`array-contains-any`, `in`, and `not-in`. If specifying a numeric value as a string, enclose it in nested quotes.\nExample: `-w id '==' '\"22\"' and age '>' 18  or status '==' active`. When using query modifiers, such as --where, --asc, --start, --limit... order matters, learn more: https://firebase.google.com/docs/firestore/query-data/get-data",
       whereOptionParser
     )
+    // TODO: complete....
+    .option("-a, --asc <field>", "Order results in an ascending order.")
+    .option("-d, --desc <field>", "Order results in an descending order.")
+    .option(
+      "-s, --start <VALUES...>",
+      "Place cursor at a list of values.\nEach value must correspond to the number of --asc/--desc flags used.\nExample: `-w id '==' 'AyuiI9=' -a age -a number_of_hobbies -s 18 2`"
+    )
+    .option(
+      "-e, --end <VALUES...>",
+      "Place ending cursor at a list of values. See --start"
+    )
+    .option(
+      "-sb, --start-before <VALUES...>",
+      "Place cursor before a list of values. See --start"
+    )
+    .option(
+      "-eb, --end-before <VALUES...>",
+      "Place ending cursor before a list of values. See --start"
+    )
+    .option(
+      "-sa, --start-after <VALUES...>",
+      "Place cursor after a list of values. See --start"
+    )
+    .option(
+      "-ea, --end-after <VALUES...>",
+      "Place ending cursor after a list of values. See --start"
+    )
+    .option("-l, --limit <VALUE>", "Limit results to `VALUE` count documents")
     .option(
       "-ws, --white-space <VALUE>",
       "Numerical value that determines the amount of whitespace and indentation the documents should be printed with. Maximum value is 8",
