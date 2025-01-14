@@ -2,7 +2,7 @@ import { existsSync, readdirSync, statSync } from "fs";
 import { Options } from "commander";
 import path from "path";
 import { CREDENTIALS, SERVICE_ACCOUNT } from "../auth/file-paths.mjs";
-import { authenticateFirestore } from "../auth/service-account.mjs";
+import { authenticateFirestore } from "../auth/authenticate-firestore.mjs";
 
 export function handleAuthFile(
   type: "Service Account" | "Credentials",
@@ -55,5 +55,9 @@ export const authenticateHelper = async ({
   databaseId,
 }: Options) => {
   const serviceAccount = handleAuthFile("Service Account", serviceAccountPath);
-  return authenticateFirestore(serviceAccount, databaseId);
+  return authenticateFirestore(
+    serviceAccount,
+    !!serviceAccountPath,
+    databaseId
+  );
 };

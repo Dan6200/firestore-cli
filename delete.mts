@@ -7,7 +7,6 @@ import { CLI_LOG } from "./utils/logging.mjs";
 import { authenticateHelper } from "./utils/auth.mjs";
 
 export default async (
-  globalOptions: Options,
   collection: string,
   documentIds: string | string[],
   options: Options
@@ -19,7 +18,7 @@ export default async (
     );
   }
   try {
-    const db = await authenticateHelper(globalOptions);
+    const db = await authenticateHelper(options);
     if (options.file) {
       const inputFile = options.file;
       if (!existsSync(inputFile)) {

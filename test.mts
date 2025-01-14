@@ -3,8 +3,8 @@ import handleWhereClause from "./utils/handle-where-clause.mjs";
 import { printDocuments, printObj } from "./utils/print.mjs";
 import { jest } from "@jest/globals";
 import { MockChalk } from "./types-and-interfaces.mjs";
-import { CollectionReference, Firestore } from "firebase-admin/firestore";
-import { authenticateFirestore } from "./auth/service-account.mjs";
+import { CollectionReference, Firestore } from "@google-cloud/firestore";
+import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
 
 const chalk: MockChalk = {
   green: jest.fn((text: string) => text),
@@ -77,7 +77,7 @@ describe("`handleWhereClause` function", () => {
   let db: Firestore | null = null;
   beforeAll(async () => {
     const serviceAccount = handleAuthFile(null);
-    db = await authenticateFirestore(serviceAccount);
+    db = await authenticateFirestore(serviceAccount, false);
     ref = db.collection("users");
     const batch = db.batch();
     batch.set(ref.doc("document_1"), { name: "Dan", age: 24, eye: "brown" });

@@ -6,12 +6,7 @@ import { existsSync } from "fs";
 import { resolve } from "path";
 import { CLI_LOG } from "./utils/logging.mjs";
 
-export default async (
-  globalOptions: Options,
-  collection: string,
-  data: string,
-  options: Options
-) => {
+export default async (collection: string, data: string, options: Options) => {
   let customId: string | undefined, customIds: string[] | undefined;
   if (options.customId) ({ customId } = options);
   if (options.customIds)
@@ -26,9 +21,12 @@ export default async (
     );
   const spinner = ora("Adding document(s) to " + collection + "\n").start();
   try {
-    const db = await authenticateHelper(globalOptions);
+    const db = await authenticateHelper(options);
     let parsedData: object | null = null;
     if (options.file) {
+      console.log("runs");
+      process.exit(1);
+      // TODO:
       const inputFile = options.file;
       if (!existsSync(inputFile)) {
         throw new Error(
@@ -58,7 +56,7 @@ export default async (
         );
       const bulkData = parsedData;
       const batch = db.batch();
-      if (bulkData.length !== customIds.length)
+      if (bulkData?.length !== customIds.length)
         throw new Error(
           "Number of custom IDs must match the number of documents to be added"
         );
@@ -84,7 +82,7 @@ export default async (
     }
     spinner.succeed("Done!");
   } catch (e) {
-    spinner.fail("Failed to fetch documents!");
+    spinner.fail("Failed to add document(s)!");
     CLI_LOG(e.message, "error");
     process.exitCode = 1;
   }

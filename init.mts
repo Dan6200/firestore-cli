@@ -1,7 +1,6 @@
 import { Options } from "commander";
 import { configureEnv } from "./configure-env.mjs";
 import { enableFirestoreAndLinkBilling } from "./enable-firestore-and-link-billing.mjs";
-import { enableAndLinkBillingAccount } from "./enable-firestore.mjs";
 import { setProject } from "./set-project.mjs";
 import { getInput } from "./utils/interactive.mjs";
 
@@ -20,9 +19,9 @@ export async function init(options: Options) {
   }
   await setProject(projectId, options);
   //
-  if (!options.linkBilling) {
-    options.linkBilling = confirm("Link Billing Account?");
-    if (options.linkBilling) {
+  if (!options.billingAccountId) {
+    const linkBilling = confirm("Link Billing Account?");
+    if (linkBilling) {
       const billingAccountId = await getInput("Billing Account ID");
       if (!billingAccountId)
         throw new Error("Billing Account ID cannot be empty");

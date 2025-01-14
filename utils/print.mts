@@ -29,9 +29,10 @@ export function printDocuments(
     return;
   }
   if (snapshot.empty) {
-    if (failedToStartPager) process.stdout.write("[]");
-    else return "[]";
-    return;
+    if (failedToStartPager) {
+      process.stdout.write("[]");
+      return;
+    } else return "[]";
   }
   output = "[" + "\n".repeat(NEWLINE_AMOUNT);
   if (failedToStartPager) process.stdout.write(output);

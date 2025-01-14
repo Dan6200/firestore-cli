@@ -26,3 +26,9 @@ export const CREDENTIALS = path.resolve(
     ? [process.env.APPDATA || "", "firestore-cli", "credentials"]
     : [process.env.HOME || "", ".config", "firestore-cli", "credentials"])
 );
+
+export const ENV_INFO = path.resolve(
+  ...(PLATFORM === "win32"
+    ? [process.env.APPDATA || "", "firestore-cli", "env-info.json"]
+    : [process.env.HOME || "", ".config", "firestore-cli", "env-info.json"])
+);

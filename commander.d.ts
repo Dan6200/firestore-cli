@@ -20,6 +20,7 @@ declare module "commander" {
     enableFirestore?: string;
     linkBilling?: boolean;
     locationId: string;
+    pager?: string | boolean;
   }
   type WhereClause = [string, WhereCondition, any];
   type OrClause = ["or" | "OR", ...WhereClause];

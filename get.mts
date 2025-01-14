@@ -15,18 +15,14 @@ import { CLI_LOG } from "./utils/logging.mjs";
 
 const chalk = new Chalk({ level: 3 });
 
-export default async (
-  globalOptions: Options,
-  collection: string,
-  options: Options
-) => {
+export default async (collection: string, options: Options) => {
   let pager: any = null,
     failedToStartPager = null;
-  if (collection) ({ pager, failedToStartPager } = initializePager());
+  if (collection) ({ pager, failedToStartPager } = initializePager(options));
   const spinner = ora("Fetching documents from " + collection + "\n").start();
   let error = false;
   try {
-    const db = await authenticateHelper(globalOptions);
+    const db = await authenticateHelper(options);
     let snapshot: null | QuerySnapshot = null;
     if (options.where?.length > 0) {
       let ref: CollectionReference | Query = db.collection(collection);
@@ -35,11 +31,6 @@ export default async (
       snapshot = await db.collection(collection).get();
     }
 
-    if (snapshot?.empty) {
-      spinner.succeed("Done!");
-      process.stdout.write("[]");
-      return;
-    }
     if (failedToStartPager) {
       spinner.succeed("Done!");
     }
@@ -59,13 +50,11 @@ export default async (
       );
     if (!failedToStartPager) {
       spinner.succeed("Done!");
-      await new Promise(() => setTimeout(() => null, 250));
+      pager.stdin.write(stdOutput);
     }
-    if (!failedToStartPager) pager.stdin.write(stdOutput);
   } catch (e) {
     spinner.fail("Failed to fetch documents!");
-    CLI_LOG(e.message, "error");
-    console.error(e);
+    CLI_LOG(e, "error", pager);
     error = true;
   } finally {
     if (!failedToStartPager) pager.stdin.end();

@@ -15,18 +15,9 @@ const program = new Command();
 try {
   program
     .name("firestore-cli")
-    .description("CLI tool to query google cloud firebase firestore database")
+    .description("CLI tool to query the google cloud firestore database")
     .version("1.0.0")
-    .option("--credentials <VALUE>")
-    .option("--database-id <VALUE>", "Specifies the database Id")
-    .option(
-      "--pager <VALUE>",
-      "Customizes which pager should be used to read output. The default is 'less'"
-    )
-    .option(
-      "--pager-args [ARGS...]",
-      "The arguments which should be passed to the pager"
-    );
+    .option("--credentials <VALUE>");
 
   program
     .command("init")
@@ -41,38 +32,35 @@ try {
 
   program
     .command("set-project <project-id>")
-    .description("Sets the project to be used with Firestore CLI.")
-    .option(
-      "--createProject",
-      "Creates a project with the ID `project-id` passed in as the argument to this command. Else it finds the existing project with ID `project-id`. To be used in conjunction with the --projectName flag"
+    .description(
+      "Sets the project to be used with Firestore CLI. <project-id> The project ID of an existing project."
     )
     .option(
-      "--projectName <VALUE>",
-      "The project name of the project to be created. Must be used in conjunction with the --createProject flag."
+      "--create-project <project_name>",
+      "Creates a project with the ID <project-id> passed in as the argument to this command.\n<project-name>: The project name of the project to be created."
     )
     .action(setProject);
 
   program
-    .command("enable-firestore <project-id>")
-    .description(
-      "Enables firestore for the project. To be used in conjunction with the --billing-account-id or the --no-link-billing flag."
+    .command("enable-firestore [project-id]")
+    .description("Enables firestore for the project.")
+    .option(
+      "--database-id <VALUE>",
+      "`database-id` is the optional argument for the name of the database.\nA billing account is required when creating databases other than `(default)`."
     )
     .option(
-      "--billing-account-id",
+      "--billing-account-id <VALUE>",
       "Provides the billing account ID to enable cloud billing for firestore."
     )
     .option(
-      "--no-link-billing",
-      "Option to create firestore database without linking billing account. If creating additional databases other than `(default)`, a billing account must be set."
-    )
-    .option(
       "--location-id <VALUE>",
-      "Location to set the new database. Example: --location-id nam5"
+      "Location to set the new database. Default is nam5.\nExample: --location-id nam5",
+      "nam5"
     )
     .action(enableFirestoreAndLinkBilling);
 
   program
-    .command("service-account-create <project-id>")
+    .command("service-account-create [project-id]")
     .description(
       `Creates a new service account and generate a new service account key. Saves the key file at \`${SERVICE_ACCOUNT}\`.`
     )
@@ -103,10 +91,14 @@ try {
       "Allows the customization of the document id for bulk addition of documents. Must be used in conjunction with the --bulk flag or an error occurs"
     )
     .description("Add document to a collection")
-    .action(add.bind(null, program.opts()));
+    .action(add);
 
   program
     .command("get <collection>")
+    .option(
+      "--database-id <VALUE>",
+      "Specifies the database Id. If not specified `(default)` is used."
+    )
     .option(
       "--service-account <VALUE>",
       `Filepath to the service account JSON key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT}\` directory.`
@@ -123,10 +115,24 @@ try {
     )
     .option("-j, --json", "Format output in JSON format")
     .description("Fetch documents from a collection")
-    .action(get.bind(null, program.opts()));
+    .option("-np, --no-pager", "The option to print results without a pager.")
+    .option(
+      "--pager <VALUE>",
+      "Customizes which pager should be used to read output. The default is 'less'",
+      "less"
+    )
+    .option(
+      "--pager-args [ARGS...]",
+      "The arguments which should be passed to the pager"
+    )
+    .action(get);
 
   program
     .command("update <collection> [data] [document-id...]")
+    .option(
+      "--database-id <VALUE>",
+      "Specifies the database Id. If not specified `(default)` is used."
+    )
     .option(
       "--service-account <VALUE>",
       `Filepath to the service account JSON key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT}\` directory.`
@@ -142,13 +148,17 @@ try {
     )
     .option(
       "-o, --overwrite",
-      "Update the document by replace its existing data"
+      "Update the document by replace its existing data. A merge is done instead if this option is not set."
     )
     .description("Update document in a collection")
-    .action(update.bind(null, program.opts()));
+    .action(update);
 
   program
     .command("delete <collection> [document-ids...]")
+    .option(
+      "--database-id <VALUE>",
+      "Specifies the database Id. If not specified `(default)` is used."
+    )
     .option("-b, --bulk", "Perform bulk add operations")
     .option(
       "--service-account <VALUE>",
@@ -156,14 +166,14 @@ try {
     )
     .option(
       "-f --file <VALUE>",
-      "Read input from a file. Unless the --file-type flag is set, the file is assumed to be in JSON format"
+      "Read documentIds from a file. Unless the --file-type flag is set, the file is assumed to be in JSON format"
     )
     .option(
       "--file-type <VALUE>",
       "Specify the file type of the input file. To be used in conjunction with the --file flag"
     )
     .description("Delete document(s) from a collection")
-    .action(deleteDoc.bind(null, program.opts()));
+    .action(deleteDoc);
 } catch (error) {
   CLI_LOG("Encountered an error!", "error");
   program.exitOverride(error);

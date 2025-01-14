@@ -11,7 +11,10 @@ export function saveKeyToFile(
   const key = Buffer.from(privateKeyData, "base64").toString("utf-8");
   const keyFile =
     oldKeyFile ??
-    path.resolve(SERVICE_ACCOUNT, `service-account-key-${date}.json`);
+    path.resolve(
+      SERVICE_ACCOUNT,
+      `service-account-key-${date.replace(":", "-")}.json`
+    );
   fs.writeFileSync(keyFile, key, "utf-8");
   CLI_LOG(`Service account key saved to ${keyFile}`);
 }

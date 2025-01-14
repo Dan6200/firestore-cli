@@ -1,26 +1,21 @@
 import { spawn } from "child_process";
+import { Options } from "commander";
 import { program } from "./commands.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
 
 let pager: any = null;
 let failedToStartPager = false;
 
-export function initializePager() {
-  const usersPager: string = program.opts().pager;
-  if (usersPager?.toUpperCase() === "NONE") failedToStartPager = true;
+export function initializePager({ pager: pagerOption }: Options) {
+  if (typeof pagerOption === "boolean") failedToStartPager = true;
   else {
-    if (usersPager)
-      pager = spawn(usersPager, program.opts().pagerArgs, {
-        stdio: ["pipe", "inherit", "inherit"],
-      });
-    else
-      pager = spawn(process.env.PAGER, {
-        stdio: ["pipe", "inherit", "inherit"],
-      });
+    pager = spawn(pagerOption, program.opts().pagerArgs, {
+      stdio: ["pipe", "inherit", "inherit"],
+    });
     pager.on("error", () => {
       failedToStartPager = true;
       CLI_LOG(
-        "Could not find less installed on your system. Printing directly to stdout instead\n",
+        `Could not find ${pagerOption} installed on your system. Printing directly to stdout instead\n`,
         "error"
       );
     });

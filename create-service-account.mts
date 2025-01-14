@@ -1,6 +1,8 @@
 //cspell:disable
 import { Options } from "commander";
 import { existsSync } from "fs";
+import { resolve } from "path";
+import { ENV_INFO } from "./auth/file-paths.mjs";
 import { oAuth2 } from "./auth/oauth2.mjs";
 import parentProjectId from "./auth/parent-project-id.mjs";
 import { handleAuthFile } from "./utils/auth.mjs";
@@ -15,18 +17,40 @@ export async function createServiceAccountWithKey(
   projectId: string,
   options: Options
 ) {
-  const keyFile = options.overwrite
-    ? handleAuthFile("Service Account")
-    : undefined;
-  if (keyFile && existsSync(keyFile) && !options.overwrite) {
+  try {
+    if (!projectId) {
+      ({
+        default: { projectId },
+      } = await import(resolve(ENV_INFO), {
+        assert: { type: "json" },
+      }));
+      if (projectId)
+        throw new Error(
+          "Need to set project with the `set-project` command or include `project-id` as argument"
+        );
+    }
+    const keyFile = options.overwrite
+      ? handleAuthFile("Service Account")
+      : undefined;
+    if (keyFile && existsSync(keyFile) && !options.overwrite) {
+      CLI_LOG(
+        "Service Account key exists. Use the --overwrite flag to overwrite",
+        "error"
+      );
+      throw new Error();
+    }
+    const authClient = await oAuth2();
+    await enableIAMAPI(authClient, await parentProjectId, true);
+    const serviceAccountName = await createServiceAccount(
+      authClient,
+      projectId
+    );
+    await createServiceAccountKey(authClient, serviceAccountName, keyFile);
+  } catch (e) {
     CLI_LOG(
-      "Service Account key exists. Use the --overwrite flag to overwrite",
+      `Failed to create service account and service account key for project: ${projectId}: ` +
+        e,
       "error"
     );
-    throw new Error();
   }
-  const authClient = await oAuth2();
-  await enableIAMAPI(authClient, await parentProjectId, true);
-  const serviceAccountName = await createServiceAccount(authClient, projectId);
-  await createServiceAccountKey(authClient, serviceAccountName, keyFile);
 }
