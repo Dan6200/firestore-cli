@@ -137,19 +137,25 @@ try {
       whereOptionParser
     )
     // TODO: complete....
-    .option("-a, --asc <field>", "Order results in an ascending order.")
-    .option("-d, --desc <field>", "Order results in an descending order.")
+    .option(
+      "-a, --asc <field>",
+      "Order results in an ascending order. To be implemented soon."
+    )
+    .option(
+      "-d, --desc <field>",
+      "Order results in an descending order. To be implemented soon."
+    )
     .option(
       "-s, --start <VALUES...>",
-      "Place cursor at a list of values.\nEach value must correspond to the number of --asc/--desc flags used.\nExample: `-w id '==' 'AyuiI9=' -a age -a number_of_hobbies -s 18 2`"
+      "Place cursor at a list of values.\nEach value must correspond to the number of --asc/--desc flags used.\nExample: `-w id '==' 'AyuiI9=' -a age -a number_of_hobbies -s 18 2`. To be implemented soon."
     )
     .option(
       "-e, --end <VALUES...>",
-      "Place ending cursor at a list of values. See --start"
+      "Place ending cursor at a list of values. See --start. To be implemented soon."
     )
     .option(
       "-sb, --start-before <VALUES...>",
-      "Place cursor before a list of values. See --start"
+      "Place cursor before a list of values. See --start. To be implemented soon."
     )
     .option(
       "-eb, --end-before <VALUES...>",
@@ -157,13 +163,16 @@ try {
     )
     .option(
       "-sa, --start-after <VALUES...>",
-      "Place cursor after a list of values. See --start"
+      "Place cursor after a list of values. See --start. To be implemented soon."
     )
     .option(
       "-ea, --end-after <VALUES...>",
-      "Place ending cursor after a list of values. See --start"
+      "Place ending cursor after a list of values. See --start. To be implemented soon."
     )
-    .option("-l, --limit <VALUE>", "Limit results to `VALUE` count documents")
+    .option(
+      "-l, --limit <VALUE>",
+      "Limit results to `VALUE` count documents. To be implemented soon."
+    )
     .option(
       "-ws, --white-space <VALUE>",
       "Numerical value that determines the amount of whitespace and indentation the documents should be printed with. Maximum value is 8",
