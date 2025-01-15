@@ -17,7 +17,7 @@ try {
   program
     .name("firestore-cli")
     .description("CLI tool to query the google cloud firestore database")
-    .version("1.0.0")
+    .version("1.0.1")
     .option("--credentials <VALUE>");
 
   program
