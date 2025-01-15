@@ -39,8 +39,8 @@ export async function createServiceAccountWithKey(
       );
       throw new Error();
     }
-    const authClient = await oAuth2();
-    await enableIAMAPI(authClient, await parentProjectId, true);
+    const authClient = await oAuth2(options);
+    await enableIAMAPI(authClient, await parentProjectId(), true);
     const serviceAccountName = await createServiceAccount(
       authClient,
       projectId
