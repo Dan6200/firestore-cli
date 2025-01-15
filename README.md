@@ -9,7 +9,7 @@
 - Enable the **Firebase API** or whichever Google APIs you need.
 - Under **APIs & Services** → **Credentials**, create a new **OAuth 2.0 client ID** (with application type "Desktop App").
 - Run the `firestore-cli init` command.
-- Download the `JSON` file and store it locally in: `~/.config/firestore-cli/credentials/`.
+- Download the `JSON` file and store it locally in: `~/.config/firestore-cli/credentials/` (for \*nix systems) and `%APP_DATA%\firestore-cli\credentials` for windows.
 
 ### 2. Run the CLI Tool
 
@@ -32,5 +32,4 @@ firestore-cli init
   - Go to the Service Accounts tab.
   - Run the `firestore-cli init` command.
   - Click "Generate new private key" and store that file in: `~/.config/firestore-cli/service-account/`
-  - Run each subsequent command with the `--use-service` flag.
-  - You can also provide the Service Account key as a command line argument using the `--service-account` flag and the file path. No need for the `--use-service` flag here.
+  - You should provide the Service Account key as a command line argument using the `--service-account` flag and the file path.
