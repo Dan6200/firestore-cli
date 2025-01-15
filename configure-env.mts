@@ -20,12 +20,17 @@ export async function configureEnv() {
     if (!alreadyInit) {
       CLI_LOG(`Successfully configured environment.`);
       CLI_LOG(
-        `If you have not already, get your OAuth2 Credentials JSON file from the Google Cloud Console or with the \`gcloud\` CLI tool.\nSee docs for more: https://github.com/Dan6200/firestore-cli/blob/main/README.md.`
+        `Get your OAuth2 Credentials JSON file from the Google Cloud Console or with the \`gcloud\` CLI tool.\nSee docs for more: https://github.com/Dan6200/firestore-cli/blob/main/README.md.`
       );
       return;
-    } else CLI_LOG(`Environment already configured.`);
+    } else {
+      CLI_LOG(`Environment already configured.`);
+      CLI_LOG(
+        `If you have not already, get your OAuth2 Credentials JSON file from the Google Cloud Console or with the \`gcloud\` CLI tool.\nSee docs for more: https://github.com/Dan6200/firestore-cli/blob/main/README.md.`
+      );
+    }
   } catch (err) {
-    CLI_LOG(`Error initializing firestore-cli.`, "error");
-    process.exitCode = 1;
+    CLI_LOG(`Error configuring environment.`, "error");
+    process.exit(1);
   }
 }

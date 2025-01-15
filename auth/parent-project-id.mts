@@ -21,7 +21,6 @@ async function getParentProjectId() {
         "error"
       );
     process.exitCode = 1;
-    process.exit();
   }
 }
 

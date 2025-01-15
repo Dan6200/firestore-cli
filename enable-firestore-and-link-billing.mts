@@ -37,8 +37,9 @@ export async function enableFirestoreAndLinkBilling(
     CLI_LOG("Firestore database successfully enabled.");
   } catch (e) {
     CLI_LOG(
-      `Failed to enable firestore for project: ${projectId}: ` + e,
+      `Failed to enable firestore for project ${projectId}:\n\t` + e.message,
       "error"
     );
+    process.exit(1);
   }
 }

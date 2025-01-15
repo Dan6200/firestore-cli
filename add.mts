@@ -65,7 +65,7 @@ export default async (collection: string, data: string, options: Options) => {
       try {
         await batch.commit();
       } catch (e) {
-        throw new Error("Failed to add new documents: " + e);
+        throw new Error("Failed to add new documents: " + e.message);
       }
     } else {
       const col = db.collection(collection);

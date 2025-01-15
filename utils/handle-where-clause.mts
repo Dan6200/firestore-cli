@@ -1,4 +1,4 @@
-import { CollectionReference, Filter, Query } from "firebase-admin/firestore";
+import { CollectionReference, Filter, Query } from "@google-cloud/firestore";
 import { Condition, WhereClause, WhereCondition } from "commander";
 
 export default function handleWhereClause(

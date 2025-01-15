@@ -17,9 +17,7 @@ export function handleAuthFile(
       throw new Error(
         `${
           isCred ? "OAuth Credentials" : "Service Account"
-        } directory not found. Please ensure you have run \`firestore-cli init\` and follow the guide to get the ${
-          isCred ? "credentials JSON file" : "service account key"
-        } before running this command`
+        } directory not found.\nPlease ensure you have run \`firestore-cli init\` and follow the guide to get the credentials JSON file before running this command`
       );
     const authFileDir = readdirSync(dirPath);
     const files = authFileDir.filter((file) => file.endsWith(".json"));
@@ -27,11 +25,7 @@ export function handleAuthFile(
       throw new Error(
         `No ${
           isCred ? "OAuth Credentials JSON" : "Service Account key"
-        } file found. Please place your JSON file in the \`~/.config/firestore-cli/${
-          isCred ? "credentials" : "service-account"
-        }\` directory or provide a file path using the --${
-          isCred ? "credentials" : "service-account"
-        } flag.`
+        } file found. \nPlease ensure you have run \`firestore-cli init\` and follow the guide to get the credentials JSON file before running this command.\nUse a service account key instead.`
       );
     if (files.length > 1)
       throw new Error(

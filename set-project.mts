@@ -10,7 +10,6 @@ export async function setProject(projectId: string, options: Options) {
     if (!projectId) throw new Error("Must provide project ID");
     let project: any;
     if (options?.createProject) {
-      // TODO: return project information save to a file
       project = await createProject(projectId, options);
       if (typeof projectId === "boolean") {
         CLI_LOG(
@@ -19,18 +18,18 @@ export async function setProject(projectId: string, options: Options) {
         return;
       }
     } else {
-      // TODO: retrieve project information and save to a file
       project = await getProject(projectId, options);
     }
     const spinner = ora(`Setting project ${projectId}...\n`).start();
     try {
       await writeFile(ENV_INFO, JSON.stringify(project));
       spinner.succeed(`Project ${projectId} set`);
-    } catch (e) {
-      CLI_LOG(e, "error");
-      spinner.fail(`Failed to set project ${projectId}`);
+    } catch {
+      spinner.fail(`Failed to write to file`);
+      throw new Error();
     }
-  } catch (e) {
+  } catch {
     CLI_LOG(`Failed to set project ${projectId ?? ""}`, "error");
+    process.exit(1);
   }
 }

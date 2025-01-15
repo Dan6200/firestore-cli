@@ -37,10 +37,10 @@ export const enableFirestoreAPI = async (
       spinner.succeed("Firestore API enabled");
       return response;
     }
-    spinner.fail();
     throw new Error(error.message);
   } catch (e) {
-    CLI_LOG("Failed to enable Firestore API..." + e, "error");
+    spinner.fail();
+    CLI_LOG("Failed to enable Firestore API:\n\t" + e.message, "error");
     process.exitCode = 1;
   }
 };
@@ -68,10 +68,13 @@ export const enableCloudResourceManAPI = async (
       spinner.succeed("Cloud Resource Manager API enabled...");
       return response;
     }
-    spinner.fail();
     throw new Error(error.message);
   } catch (e) {
-    CLI_LOG("Failed to enable Cloud Resource Manager API..." + e, "error");
+    spinner.fail();
+    CLI_LOG(
+      "Failed to enable Cloud Resource Manager API\n\t" + e.message,
+      "error"
+    );
     process.exitCode = 1;
   }
 };
@@ -103,10 +106,10 @@ export const enableIAMAPI = async (
       spinner.succeed("IAM API enabled...");
       return response;
     }
-    spinner.fail();
     throw new Error(error.message);
   } catch (e) {
-    CLI_LOG("Failed to enable IAM API..." + e, "error");
+    spinner.fail();
+    CLI_LOG("Failed to enable IAM API\n\t" + e.message, "error");
     process.exitCode = 1;
   }
 };
@@ -143,10 +146,10 @@ export const enableCloudBillingAPI = async (
       spinner.succeed("Cloud Billing API enabled...");
       return response;
     }
-    spinner.fail();
     throw new Error(error.message);
   } catch (e) {
-    CLI_LOG("Failed to enable Cloud Billing API..." + e, "error");
+    spinner.fail();
+    CLI_LOG("Failed to enable Cloud Billing API\n\t" + e.message, "error");
     process.exitCode = 1;
   }
 };
@@ -164,7 +167,7 @@ export function configureFirestore(projectId: string) {
     firestore.settings({ ignoreUndefinedProperties: true });
     CLI_LOG("Firestore database configured");
   } catch (e) {
-    CLI_LOG("Failed to configure Firestore database..." + e, "error");
+    CLI_LOG("Failed to configure Firestore database\n\t" + e.message, "error");
     process.exitCode = 1;
   }
 }
@@ -210,7 +213,7 @@ export async function createServiceAccountKey(
     throw new Error(`Invalid respone ${serviceAccountKey}`);
   } catch (e) {
     spinner.fail();
-    CLI_LOG("Failed to create Service account: " + e, "error");
+    CLI_LOG("Failed to create Service account: " + e.message, "error");
     process.exitCode = 1;
   }
 }
@@ -257,7 +260,7 @@ export async function createServiceAccount(
     return serviceAccount.name;
   } catch (e) {
     spinner.fail();
-    CLI_LOG("Failed to create Service account: " + e, "error");
+    CLI_LOG("Failed to create Service account: " + e.message, "error");
     process.exitCode = 1;
   }
 }
@@ -311,7 +314,7 @@ export async function createFirestoreDatabase(
         `Failed to create Firestore database: The database \`${databaseId}\` already exists. Please use another database.`,
         `error`
       );
-    CLI_LOG("Failed to create Firestore database: " + e, "error");
+    CLI_LOG("Failed to create Firestore database: " + e.message, "error");
     process.exitCode = 1;
   }
 }
@@ -390,7 +393,12 @@ export async function enableAndLinkBillingAccount(
   { billingAccountId, ...options }: Options
 ) {
   const oAuthClient = await oAuth2(options);
-  await enableCloudBillingAPI(oAuthClient, await parentProjectId(), true);
+  const cloudBillingResource = await enableCloudBillingAPI(
+    oAuthClient,
+    await parentProjectId(),
+    true
+  );
+  if (!cloudBillingResource) throw new Error();
   return linkCloudBillingAccount(oAuthClient, projectId, billingAccountId);
 }
 
@@ -454,12 +462,16 @@ export async function createProject(
       spinner.succeed("Project created.");
       return response;
     }
-    if (error) {
-      spinner.fail("Operation Failed!");
-      throw new Error(error.message);
-    }
+    throw new Error(error.message);
   } catch (e) {
-    CLI_LOG("Error creating project: " + e, "error");
+    spinner.fail("Operation Failed!");
+    if (e.message.match("already exists"))
+      CLI_LOG(
+        "Project ID already exists. Choose a different string of characters" +
+          e.message,
+        "error"
+      );
+    else CLI_LOG("Error creating project: " + e.message, "error");
     process.exitCode = 1;
   }
 }

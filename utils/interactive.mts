@@ -6,10 +6,7 @@ export async function getInput(message?: string) {
   try {
     return await input({ message });
   } catch (r) {
-    CLI_LOG(
-      `Failed retrieving "${message ?? "input"}" from the user: ` + r.message,
-      "error"
-    );
+    CLI_LOG(`Failed retrieving input from the user:\n\t` + r.message, "error");
     process.exitCode = 1;
   }
 }
@@ -18,7 +15,7 @@ export async function yesNo(message?: string) {
   try {
     return await confirm({ message });
   } catch (r) {
-    CLI_LOG(`Failed to confirm choice: ` + r.message, "error");
+    CLI_LOG(`Failed to confirm choice:\n\t` + r.message, "error");
     process.exitCode = 1;
   }
 }
@@ -30,7 +27,7 @@ export async function selectOption(
   try {
     return await select({ message, choices });
   } catch (r) {
-    CLI_LOG(`Failed selecting options: ` + r.message, "error");
+    CLI_LOG(`Failed selecting options:\n\t` + r.message, "error");
     process.exitCode = 1;
   }
 }

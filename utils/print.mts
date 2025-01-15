@@ -1,7 +1,7 @@
 import { Chalk } from "chalk";
 import { ChalkInstance } from "chalk";
 import { Options } from "commander";
-import { DocumentSnapshot, QuerySnapshot } from "firebase-admin/firestore";
+import { DocumentSnapshot, QuerySnapshot } from "@google-cloud/firestore";
 import { MockChalk } from "../types-and-interfaces.mjs";
 const chalk = new Chalk({ level: 3 });
 

@@ -8,7 +8,7 @@ import {
   CollectionReference,
   Query,
   QuerySnapshot,
-} from "firebase-admin/firestore";
+} from "@google-cloud/firestore";
 import { initializePager } from "./init-pager.mjs";
 import handleWhereClause from "./utils/handle-where-clause.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
