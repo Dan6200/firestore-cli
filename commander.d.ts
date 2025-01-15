@@ -2,9 +2,12 @@ import { Command } from "commander";
 
 declare module "commander" {
   interface Options {
+    credentials?: string;
     serviceAccount?: string;
     userService?: boolean;
     databaseId?: string;
+    parentType?: "folder" | "organization";
+    parentId?: string;
     where?: Condition;
     json?: boolean;
     whiteSpace?: number;

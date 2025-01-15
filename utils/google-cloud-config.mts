@@ -4,7 +4,7 @@ import { CloudBillingClient } from "@google-cloud/billing";
 import { JSONClient } from "google-auth-library/build/src/auth/googleauth.js";
 import { JWT, OAuth2Client } from "google-auth-library";
 import { google } from "googleapis";
-import { CREDENTIALS, SERVICE_ACCOUNT } from "../auth/file-paths.mjs";
+import { CREDENTIALS } from "../auth/file-paths.mjs";
 import { CLI_LOG } from "./logging.mjs";
 import { getInput } from "./interactive.mjs";
 import { saveKeyToFile } from "./msc.mjs";
@@ -287,10 +287,14 @@ export async function createFirestoreDatabase(
         data: { done, response, error },
       } = await firestoreAdmin.projects.databases.create({
         auth,
-        requestBody: {
-          type: "FIRESTORE_NATIVE",
-          locationId: locationId,
-        },
+        requestBody: locationId
+          ? {
+              type: "FIRESTORE_NATIVE",
+            }
+          : {
+              type: "FIRESTORE_NATIVE",
+              locationId: locationId,
+            },
         parent: `projects/${projectId}`,
         databaseId,
       }));
@@ -346,13 +350,16 @@ export async function linkCloudBillingAccount(
   }
 }
 
-export async function grantAccessToFirestore(projectId: string) {
+export async function grantAccessToFirestore(
+  projectId: string,
+  { serviceAccount, ...options }: Options
+) {
   const {
     default: { client_email: serviceAccountEmail },
-  } = await import(handleAuthFile("Service Account"), {
+  } = await import(handleAuthFile("Service Account", serviceAccount), {
     assert: { type: "json" },
   });
-  const oAuthClient = await oAuth2();
+  const oAuthClient = await oAuth2(options);
   const spinner = ora("Granting access to firestore...").start();
   let iamPolicy;
   try {
@@ -372,7 +379,7 @@ export async function grantAccessToFirestore(projectId: string) {
 }
 
 export async function enableFirestore(projectId: string, options: Options) {
-  const oAuthClient = await oAuth2();
+  const oAuthClient = await oAuth2(options);
   const response = await enableFirestoreAPI(oAuthClient, projectId);
   if (!response) return;
   return createFirestoreDatabase(oAuthClient, projectId, options);
@@ -380,19 +387,19 @@ export async function enableFirestore(projectId: string, options: Options) {
 
 export async function enableAndLinkBillingAccount(
   projectId: string,
-  { billingAccountId }: Options
+  { billingAccountId, ...options }: Options
 ) {
-  const oAuthClient = await oAuth2();
-  await enableCloudBillingAPI(oAuthClient, await parentProjectId, true);
+  const oAuthClient = await oAuth2(options);
+  await enableCloudBillingAPI(oAuthClient, await parentProjectId(), true);
   return linkCloudBillingAccount(oAuthClient, projectId, billingAccountId);
 }
 
-export async function getProject(projectId: string) {
+export async function getProject(projectId: string, options: Options) {
   const cloudResourceManager = google.cloudresourcemanager("v1");
   let spinner;
   try {
-    const oAuthClient = await oAuth2();
-    await enableCloudResourceManAPI(oAuthClient, await parentProjectId);
+    const oAuthClient = await oAuth2(options);
+    await enableCloudResourceManAPI(oAuthClient, await parentProjectId());
     spinner = ora("Retrieving project...").start();
     const { data } = await cloudResourceManager.projects.get({
       auth: oAuthClient,
@@ -411,10 +418,10 @@ export async function getProject(projectId: string) {
 
 export async function createProject(
   projectId: string,
-  projectName: string,
-  parentType?: "folder" | "organization",
-  parentId?: string
+  { parentType, parentId, projectName, ...options }: Options
 ) {
+  if (!projectName) {
+  }
   const cloudResourceManager = google.cloudresourcemanager("v1");
   let projectBody = null;
   if (parentType)
@@ -429,8 +436,8 @@ export async function createProject(
   else projectBody = { projectId, name: projectName };
   let spinner;
   try {
-    const oAuthClient = await oAuth2();
-    await enableCloudResourceManAPI(oAuthClient, await parentProjectId);
+    const oAuthClient = await oAuth2(options);
+    await enableCloudResourceManAPI(oAuthClient, await parentProjectId());
     spinner = ora("Creating project...").start();
     let done = false,
       response,

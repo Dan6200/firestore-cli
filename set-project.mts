@@ -10,11 +10,8 @@ export async function setProject(projectId: string, options: Options) {
     if (!projectId) throw new Error("Must provide project ID");
     let project: any;
     if (options?.createProject) {
-      const projectName = options?.projectName;
-      //
-      if (!projectName) throw new Error("Must provide project Name");
       // TODO: return project information save to a file
-      project = await createProject(projectId, projectName);
+      project = await createProject(projectId, options);
       if (typeof projectId === "boolean") {
         CLI_LOG(
           `${projectId} is still being created...Wait briefly then retry with the exact same flags and arguments`
@@ -23,7 +20,7 @@ export async function setProject(projectId: string, options: Options) {
       }
     } else {
       // TODO: retrieve project information and save to a file
-      project = await getProject(projectId);
+      project = await getProject(projectId, options);
     }
     const spinner = ora(`Setting project ${projectId}...\n`).start();
     try {

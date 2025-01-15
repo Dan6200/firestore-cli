@@ -21,13 +21,13 @@ try {
     .option("--credentials <VALUE>");
 
   program
-    .command("init")
+    .command("init [project-id]")
     .description(
       "Walk through to set up Firestore CLI for your project. Configures environment then sets up project to be used with Firestore CLI."
     )
     .option(
-      "--create-project <project_name>",
-      "Creates a project with the ID <project-id> passed in as the argument to this command.\n<project-name>: The project name of the project to be created."
+      "--create-project <project-name>",
+      "Creates a project with the ID `project-id` passed in as the argument to the parent command.\n<project-name>: The project name of the project to be created."
     )
     .option(
       "--database-id <VALUE>",
@@ -57,11 +57,19 @@ try {
   program
     .command("set-project <project-id>")
     .description(
-      "Sets the project to be used with Firestore CLI. <project-id> The project ID of an existing project."
+      "Sets the Firestore CLI to use the specified project. <project-id>: The unique identifier of an existing Google Cloud project."
     )
     .option(
       "--create-project <project_name>",
-      "Creates a project with the ID <project-id> passed in as the argument to this command.\n<project-name>: The project name of the project to be created."
+      "Creates a new Google Cloud project with the given <project-id>. <project-name>: The display name for the project to be created."
+    )
+    .option(
+      "--parent-id <parent-id>",
+      "Specifies the unique identifier (ID) of the parent resource (organization or folder) under which the project is created."
+    )
+    .option(
+      "--parent-type <parent-type>",
+      'Defines the type of the parent resource. Options are "organization" for organization-level resources or "folder" for folder-level resources.'
     )
     .action(setProject);
 
@@ -79,8 +87,7 @@ try {
     )
     .option(
       "--location-id <VALUE>",
-      "Location to set the new database. Default is nam5.\nExample: --location-id nam5",
-      "nam5"
+      "Location to set the new database.\nExample: --location-id nam5"
     )
     .action(enableFirestoreAndLinkBilling);
 

@@ -1,3 +1,8 @@
+import { Options } from "commander";
+
+export type WithoutServiceAccount = Omit<Options, "serviceAccount">;
+export type WithoutBillingAccount = Omit<Options, "billingAccountId">;
+
 export interface MockChalk {
   green: jest.Mock<string, [string]>;
   blue: jest.Mock<string, [string]>;

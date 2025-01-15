@@ -29,7 +29,7 @@ export async function enableFirestoreAndLinkBilling(
       projectId = await enableAndLinkBillingAccount(projectId, options);
     if (projectId !== oldProjectId)
       throw new Error("Error response from `enableAndLinkBillingAccount`");
-    const iamPolicy = await grantAccessToFirestore(projectId);
+    const iamPolicy = await grantAccessToFirestore(projectId, options);
     if (!iamPolicy) throw new Error("Failed to grant access to Firestore");
     const firestore = await enableFirestore(projectId, options);
     if (!firestore) throw new Error("Error response from `enableFirestore`");
