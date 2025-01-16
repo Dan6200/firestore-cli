@@ -25,7 +25,7 @@ export function handleAuthFile(
       throw new Error(
         `No ${
           isCred ? "OAuth Credentials JSON" : "Service Account key"
-        } file found. \nPlease ensure you have run \`firestore-cli init\` and follow the guide to get the credentials JSON file before running this command.\nUse a service account key instead.`
+        } file found. \nPlease ensure you have run \`firestore-cli init\` and follow the guide to get the credentials JSON file before running this command.\nOr use a Service Account key from Google Cloud.`
       );
     if (files.length > 1)
       throw new Error(

@@ -7,7 +7,7 @@ import whereOptionParser from "./utils/where-option-parser.mjs";
 import { configureEnv } from "./configure-env.mjs";
 import { setProject } from "./set-project.mjs";
 import { enableFirestoreAndLinkBilling } from "./enable-firestore-and-link-billing.mjs";
-import { SERVICE_ACCOUNT } from "./auth/file-paths.mjs";
+import { CREDENTIALS, SERVICE_ACCOUNT } from "./auth/file-paths.mjs";
 import { createServiceAccountWithKey } from "./create-service-account.mjs";
 import { init } from "./init.mjs";
 const program = new Command();
@@ -15,8 +15,7 @@ const program = new Command();
 program
   .name("firestore-cli")
   .description("CLI tool to query the google cloud firestore database")
-  .version("1.0.4")
-  .option("--credentials <VALUE>");
+  .version("1.0.5");
 
 program
   .command("init [project-id]")
@@ -54,6 +53,14 @@ program
 
 program
   .command("set-project <project-id>")
+  .option(
+    "-c, --credentials <VALUE>",
+    `File path to the OAuth2 credentials JSON file. If this option is not provided, the program looks for the file in the \`${CREDENTIALS}\` directory`
+  )
+  .option(
+    "-k, --service-account <VALUE>",
+    `Filepath to the service account JSON key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT}\` directory.`
+  )
   .description(
     "Sets the Firestore CLI to use the specified project. <project-id>: The unique identifier of an existing Google Cloud project."
   )
@@ -75,6 +82,10 @@ program
   .command("enable-firestore [project-id]")
   .description("Enables firestore for the project.")
   .option(
+    "-c, --credentials <VALUE>",
+    `File path to the OAuth2 credentials JSON file. If this option is not provided, the program looks for the file in the \`${CREDENTIALS}\` directory`
+  )
+  .option(
     "--database-id <VALUE>",
     "`database-id` is the optional argument for the name of the database.\nA billing account is required when creating databases other than `(default)`.",
     "(default)"
@@ -95,6 +106,14 @@ program
     `Creates a new service account and generate a new service account key. Saves the key file at \`${SERVICE_ACCOUNT}\`.`
   )
   .option(
+    "-c, --credentials <VALUE>",
+    `File path to the OAuth2 credentials JSON file. If this option is not provided, the program looks for the file in the \`${CREDENTIALS}\` directory`
+  )
+  .option(
+    "-k, --service-account <VALUE>",
+    `Filepath to the service account JSON key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT}\` directory.`
+  )
+  .option(
     "--overwrite-key",
     "Overwrite any existing service account key if any"
   )
@@ -102,8 +121,13 @@ program
 
 program
   .command("add <collection> [new-document-data]")
+  .description("Add document to a collection")
   .option(
-    "--service-account <VALUE>",
+    "-c, --credentials <VALUE>",
+    `File path to the OAuth2 credentials JSON file. If this option is not provided, the program looks for the file in the \`${CREDENTIALS}\` directory`
+  )
+  .option(
+    "-k, --service-account <VALUE>",
     `Filepath to the service account JSON key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT}\` directory.`
   )
   .option("-b, --bulk", "Perform bulk add operations")
@@ -123,18 +147,22 @@ program
     "--custom-ids [VALUE...]",
     "Allows the customization of the document id for bulk addition of documents. Must be used in conjunction with the --bulk flag or an error occurs"
   )
-  .description("Add document to a collection")
   .action(add);
 
 program
   .command("get <collection>")
+  .description("Fetch documents from a collection")
+  .option(
+    "-c, --credentials <VALUE>",
+    `File path to the OAuth2 credentials JSON file. If this option is not provided, the program looks for the file in the \`${CREDENTIALS}\` directory`
+  )
+  .option(
+    "-k, --service-account <VALUE>",
+    `Filepath to the service account JSON key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT}\` directory.`
+  )
   .option(
     "--database-id <VALUE>",
     "Specifies the database Id. If not specified `(default)` is used."
-  )
-  .option(
-    "--service-account <VALUE>",
-    `Filepath to the service account JSON key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT}\` directory.`
   )
   .option(
     "-w, --where [VALUE...]",
@@ -184,7 +212,6 @@ program
     parseInt
   )
   .option("-j, --json", "Format output in JSON format")
-  .description("Fetch documents from a collection")
   .option("-np, --no-pager", "The option to print results without a pager.")
   .option(
     "--pager <VALUE>",
@@ -199,13 +226,18 @@ program
 
 program
   .command("update <collection> [data] [document-id...]")
+  .description("Update document(s) in a collection")
+  .option(
+    "-c, --credentials <VALUE>",
+    `File path to the OAuth2 credentials JSON file. If this option is not provided, the program looks for the file in the \`${CREDENTIALS}\` directory`
+  )
+  .option(
+    "-k, --service-account <VALUE>",
+    `Filepath to the service account JSON key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT}\` directory.`
+  )
   .option(
     "--database-id <VALUE>",
     "Specifies the database Id. If not specified `(default)` is used."
-  )
-  .option(
-    "--service-account <VALUE>",
-    `Filepath to the service account JSON key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT}\` directory.`
   )
   .option("-b, --bulk", "Perform bulk update operations")
   .option(
@@ -220,20 +252,24 @@ program
     "-o, --overwrite",
     "Update the document by replace its existing data. A merge is done instead if this option is not set."
   )
-  .description("Update document in a collection")
   .action(update);
 
 program
   .command("delete <collection> [document-ids...]")
+  .description("Delete document(s) from a collection")
+  .option(
+    "-c, --credentials <VALUE>",
+    `File path to the OAuth2 credentials JSON file. If this option is not provided, the program looks for the file in the \`${CREDENTIALS}\` directory`
+  )
+  .option(
+    "-k, --service-account <VALUE>",
+    `Filepath to the service account JSON key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT}\` directory.`
+  )
   .option(
     "--database-id <VALUE>",
     "Specifies the database Id. If not specified `(default)` is used."
   )
   .option("-b, --bulk", "Perform bulk add operations")
-  .option(
-    "--service-account <VALUE>",
-    `Filepath to the service account JSON key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT}\` directory.`
-  )
   .option(
     "-f --file <VALUE>",
     "Read documentIds from a file. Unless the --file-type flag is set, the file is assumed to be in JSON format"
@@ -242,7 +278,6 @@ program
     "--file-type <VALUE>",
     "Specify the file type of the input file. To be used in conjunction with the --file flag"
   )
-  .description("Delete document(s) from a collection")
   .action(deleteDoc);
 
 export { program };

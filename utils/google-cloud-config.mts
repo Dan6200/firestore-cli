@@ -75,7 +75,7 @@ export const enableCloudResourceManAPI = async (
       "Failed to enable Cloud Resource Manager API\n\t" + e.message,
       "error"
     );
-    process.exitCode = 1;
+    throw new Error();
   }
 };
 
