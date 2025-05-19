@@ -1,0 +1,10 @@
+node_modules
+*.bak.*
+.env
+*.vim
+.git
+service-account
+credentials
+testing_data
+/built/
+.vscode
