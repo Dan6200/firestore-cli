@@ -8,18 +8,18 @@ import { CLI_LOG } from "./utils/logging.mjs";
 
 export async function enableFirestoreAndLinkBilling(
   projectId: string,
-  options: Options
+  options: Options,
 ) {
   try {
     if (!projectId) {
       ({
         default: { projectId },
       } = await import(resolve(ENV_INFO), {
-        assert: { type: "json" },
+        with: { type: "json" },
       }));
       if (!projectId)
         throw new Error(
-          "Need to set project with the `set-project` command or include `project-id` as argument"
+          "Need to set project with the `set-project` command or include `project-id` as argument",
         );
     }
     const oldProjectId = projectId;
@@ -36,7 +36,7 @@ export async function enableFirestoreAndLinkBilling(
   } catch (e) {
     CLI_LOG(
       `Failed to enable firestore for project ${projectId}:\n\t` + e.message,
-      "error"
+      "error",
     );
     process.exit(1);
   }

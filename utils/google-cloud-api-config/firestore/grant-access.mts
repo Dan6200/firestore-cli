@@ -1,24 +1,21 @@
 import { OAuth2Client, JWT } from "google-auth-library";
 import ora from "ora";
 import { Options } from "commander";
-import { oAuth2 } from "../../../auth/oauth2.mjs";
 import { handleAuthFile } from "../../auth.mjs";
 import { CLI_LOG } from "../../logging.mjs";
 import { grantRoleToServiceAccount } from "../service-accounts/grant-role.mjs";
-import { serviceAccountAuth } from "../../../auth/service-account.mjs";
+import { serviceAccountKeyAuth } from "../../../auth/service-account-key.mjs";
 
 export async function grantAccessToFirestore(
   projectId: string,
-  { serviceAccount, ...options }: Options
+  { serviceAccountKey }: Options,
 ) {
   const {
     default: { client_email: serviceAccountEmail },
-  } = await import(handleAuthFile("Service Account", serviceAccount), {
-    assert: { type: "json" },
+  } = await import(handleAuthFile("Service Account Key", serviceAccountKey), {
+    with: { type: "json" },
   });
-  const oAuthClient = await (serviceAccount
-    ? serviceAccountAuth(serviceAccount)
-    : oAuth2(options));
+  const oAuthClient = await serviceAccountKeyAuth(serviceAccountKey);
   const spinner = ora("Granting access to firestore...").start();
   let iamPolicy;
   try {
@@ -26,7 +23,7 @@ export async function grantAccessToFirestore(
       oAuthClient as OAuth2Client | JWT,
       projectId,
       serviceAccountEmail,
-      "roles/datastore.user"
+      "roles/datastore.user",
     );
     spinner.succeed("Successfully granted access to firestore.");
     return iamPolicy;

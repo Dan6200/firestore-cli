@@ -5,20 +5,20 @@ import { oAuth2 } from "../../../auth/oauth2.mjs";
 import parentProjectId from "../../../auth/parent-project-id.mjs";
 import { CLI_LOG } from "../../logging.mjs";
 import { enableCloudResourceManAPI } from "../enable-api/cloud-resource-manager.mjs";
-import { serviceAccountAuth } from "../../../auth/service-account.mjs";
+import { serviceAccountKeyAuth } from "../../../auth/service-account-key.mjs";
 import { JWT, OAuth2Client } from "google-auth-library";
 
 export async function getProject(projectId: string, options: Options) {
-  const { serviceAccount } = options;
+  const { serviceAccountKey } = options;
   const cloudResourceManager = google.cloudresourcemanager("v1");
   let spinner;
   try {
-    const oAuthClient = await (serviceAccount
-      ? serviceAccountAuth(serviceAccount)
+    const oAuthClient = await (serviceAccountKey
+      ? serviceAccountKeyAuth(serviceAccountKey)
       : oAuth2(options));
     await enableCloudResourceManAPI(
       oAuthClient as OAuth2Client | JWT,
-      await parentProjectId()
+      await parentProjectId(),
     );
     spinner = ora("Retrieving project...").start();
     const { data } = await cloudResourceManager.projects.get({

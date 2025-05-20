@@ -4,13 +4,13 @@ import { google } from "googleapis";
 import ora from "ora";
 import { oAuth2 } from "../../../auth/oauth2.mjs";
 import parentProjectId from "../../../auth/parent-project-id.mjs";
-import { serviceAccountAuth } from "../../../auth/service-account.mjs";
+import { serviceAccountKeyAuth } from "../../../auth/service-account-key.mjs";
 import { CLI_LOG } from "../../logging.mjs";
 import { enableCloudResourceManAPI } from "../enable-api/cloud-resource-manager.mjs";
 
 export async function createProject(
   projectId: string,
-  { parentType, parentId, projectName, serviceAccount, ...options }: Options
+  { parentType, parentId, projectName, serviceAccountKey, ...options }: Options,
 ) {
   if (!projectName) {
   }
@@ -28,12 +28,12 @@ export async function createProject(
   else projectBody = { projectId, name: projectName };
   let spinner;
   try {
-    const oAuthClient = await (serviceAccount
-      ? serviceAccountAuth(serviceAccount)
+    const oAuthClient = await (serviceAccountKey
+      ? serviceAccountKeyAuth(serviceAccountKey)
       : oAuth2(options));
     await enableCloudResourceManAPI(
       oAuthClient as OAuth2Client | JWT,
-      await parentProjectId()
+      await parentProjectId(),
     );
     spinner = ora("Creating project...").start();
     let done = false,
@@ -58,7 +58,7 @@ export async function createProject(
       CLI_LOG(
         "Project ID already exists. Choose a different string of characters" +
           e.message,
-        "error"
+        "error",
       );
     else CLI_LOG("Error creating project: " + e.message, "error");
     process.exitCode = 1;

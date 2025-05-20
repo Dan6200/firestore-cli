@@ -7,7 +7,7 @@ import { CLI_LOG } from "./utils/logging.mjs";
 
 export async function init(projectId: string, options: Options) {
   try {
-    await configureEnv(!!options?.global);
+    await configureEnv(options);
     //
     if (!projectId) {
       projectId = await getInput(

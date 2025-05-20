@@ -24,7 +24,7 @@ describe("`printObj` function", () => {
 {
     name: 'Alice',
     age: 30
-}`.trim()
+}`.trim(),
     );
   });
   it("should correctly handle nested objects", () => {
@@ -41,7 +41,7 @@ describe("`printObj` function", () => {
         city: 'Wonderland',
         zip: 1234
     }
-}`.trim()
+}`.trim(),
     );
   });
   it("should correctly handle array objects", () => {
@@ -67,7 +67,7 @@ describe("`printObj` function", () => {
         "The white rabbit",
         "The mad hatter"
     ]
-}`.trim()
+}`.trim(),
     );
   });
 });
@@ -76,8 +76,8 @@ describe("`handleWhereClause` function", () => {
   let ref: CollectionReference | null = null;
   let db: Firestore | null = null;
   beforeAll(async () => {
-    const serviceAccount = handleAuthFile(null);
-    db = await authenticateFirestore(serviceAccount, false);
+    const serviceAccountKey = handleAuthFile(null);
+    db = await authenticateFirestore(serviceAccountKey, false);
     ref = db.collection("users");
     const batch = db.batch();
     batch.set(ref.doc("document_1"), { name: "Dan", age: 24, eye: "brown" });
@@ -100,7 +100,7 @@ describe("`handleWhereClause` function", () => {
         eye: 'brown'
     }
 
-]`.trim()
+]`.trim(),
     );
   });
 
@@ -124,7 +124,7 @@ describe("`handleWhereClause` function", () => {
         eye: 'black'
     }
 
-]`.trim()
+]`.trim(),
     );
   });
 
@@ -158,7 +158,7 @@ describe("`handleWhereClause` function", () => {
         eye: 'black'
     }
 
-]`.trim()
+]`.trim(),
     );
   });
 
@@ -192,7 +192,7 @@ describe("`handleWhereClause` function", () => {
         eye: 'brown'
     }
 
-]`.trim()
+]`.trim(),
     );
   });
   afterAll(async () => {

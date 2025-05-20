@@ -9,12 +9,12 @@ import { authenticateHelper } from "./utils/auth.mjs";
 export default async (
   collection: string,
   documentIds: string | string[],
-  options: Options
+  options: Options,
 ) => {
   const spinner = ora("Deleting document(s) in " + collection + "\n").start();
   if ((!documentIds || documentIds?.length === 0) && !options.file) {
     throw new Error(
-      "Missing document IDs: Please provide the document IDs either as command-line arguments or by specifying a file with the -f flag in JSON format."
+      "Missing document IDs: Please provide the document IDs either as command-line arguments or by specifying a file with the -f flag in JSON format.",
     );
   }
   try {
@@ -23,12 +23,12 @@ export default async (
       const inputFile = options.file;
       if (!existsSync(inputFile)) {
         throw new Error(
-          "Invalid file path for the --file option: " + inputFile
+          "Invalid file path for the --file option: " + inputFile,
         );
       }
       if (!options.fileType || options.fileType.toUpperCase() === "JSON")
         ({ default: documentIds } = await import(resolve(inputFile), {
-          assert: { type: "json" },
+          with: { type: "json" },
         }));
       else {
         /*TODO: ...Add Support for YAML and CSV filetypes*/
@@ -37,7 +37,7 @@ export default async (
     if (options.bulk) {
       if (!Array.isArray(documentIds))
         throw new Error(
-          "The document IDs to delete must be in array or list format"
+          "The document IDs to delete must be in array or list format",
         );
       const batch = db.batch();
       documentIds.map((ids) => {
@@ -52,7 +52,7 @@ export default async (
     } else {
       if (documentIds.length > 1)
         throw new Error(
-          "Number of IDs provided must be one or use the --bulk flag."
+          "Number of IDs provided must be one or use the --bulk flag.",
         );
       await db.collection(collection).doc(documentIds[0]).delete();
     }

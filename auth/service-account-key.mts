@@ -4,8 +4,11 @@ import { handleAuthFile } from "../utils/auth.mjs";
 import { CLI_LOG } from "../utils/logging.mjs";
 import { SCOPES } from "./scopes.mjs";
 
-export async function serviceAccountAuth(saPath: string) {
-  const keyFile = handleAuthFile("Service Account", saPath);
+/**
+ * For Authenticating with service account key instead of oAuth2 credentials
+ */
+export async function serviceAccountKeyAuth(saPath: string) {
+  const keyFile = handleAuthFile("Service Account Key", saPath);
   if (!existsSync(keyFile) || statSync(keyFile).isDirectory()) {
     throw new Error(`Service account key file is invalid: ${keyFile}`);
   }

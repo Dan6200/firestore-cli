@@ -6,7 +6,7 @@ async function getParentProjectId() {
     const { default: credentials } = await import(
       handleAuthFile("Credentials"),
       {
-        assert: { type: "json" },
+        with: { type: "json" },
       }
     );
     return credentials.installed.project_id;
@@ -18,7 +18,7 @@ async function getParentProjectId() {
       CLI_LOG(
         "Failed To Authenticate User: Run the `firestore-cli init` command:\n" +
           e.message,
-        "error"
+        "error",
       );
     process.exitCode = 1;
   }
