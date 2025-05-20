@@ -1,7 +1,7 @@
 import { Chalk } from "chalk";
 const chalk = new Chalk({ level: 3 });
 
-type LogLevel = "info" | "error";
+type LogLevel = "info" | "error" | "log" | "debug";
 
 export function CLI_LOG(obj: any, level?: LogLevel, pager?: any) {
   switch (level) {
@@ -15,11 +15,18 @@ export function CLI_LOG(obj: any, level?: LogLevel, pager?: any) {
     case "info":
       if (pager) {
         pager.stdin.write(
-          chalk.bgWhite.black(" INFO: ") + chalk.white(` ${obj}`)
+          chalk.bgWhite.black(" INFO: ") + chalk.white(` ${obj}`),
         );
         break;
       }
       console.log(chalk.bgWhite.black(" INFO: ") + chalk.white(` ${obj}`));
+      break;
+    case "debug":
+      if (pager) {
+        pager.stdin.write(chalk.bgRed(" DEBUG: ") + chalk.red(` ${obj}`));
+        break;
+      }
+      console.debug(chalk.bgRed(" DEBUG: ") + chalk.red(` ${obj}`));
       break;
     default:
       if (pager) {

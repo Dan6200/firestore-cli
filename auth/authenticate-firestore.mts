@@ -5,12 +5,12 @@ import { ENV_INFO } from "./file-paths.mjs";
 export async function authenticateFirestore(
   keyFile: string,
   useServiceAccount: boolean,
-  databaseId?: string
+  databaseId?: string,
 ) {
   const {
     default: { projectId },
   } = await import(resolve(useServiceAccount ? keyFile : ENV_INFO), {
-    assert: { type: "json" },
+    with: { type: "json" },
   });
   //
   return new Firestore({ projectId, keyFile, databaseId });

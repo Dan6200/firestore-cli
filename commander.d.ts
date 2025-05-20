@@ -2,9 +2,9 @@ import { Command } from "commander";
 
 declare module "commander" {
   interface Options {
-    global?: boolean;
+    debug?: boolean;
     credentials?: string;
-    serviceAccount?: string;
+    serviceAccountKey?: string;
     userService?: boolean;
     databaseId?: string;
     parentType?: "folder" | "organization";
