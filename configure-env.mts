@@ -1,15 +1,11 @@
 import { existsSync } from "fs";
 import { mkdir } from "fs/promises";
-import {
-  APP_CONFIG_DIR,
-  CREDENTIALS,
-  SERVICE_ACCOUNT_KEY,
-} from "./auth/file-paths.mjs";
+import { APP_CONFIG_DIR, CREDENTIALS } from "./auth/file-paths.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
 import { Options } from "commander";
 
 export async function configureEnv({ debug }: Options) {
-  let directories = [APP_CONFIG_DIR, CREDENTIALS, SERVICE_ACCOUNT_KEY];
+  let directories = [APP_CONFIG_DIR, CREDENTIALS];
 
   let alreadyConfigured = true;
   try {

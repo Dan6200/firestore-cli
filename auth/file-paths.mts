@@ -15,11 +15,15 @@ export const TOKEN_PATH = path.resolve(
     : [process.env.HOME || "", ".config", "firestore-cli", "token.json"]),
 );
 
+/*
+ * Let users provide key path instead to avoid ambiguity
+ *
 export const SERVICE_ACCOUNT_KEY = path.resolve(
   ...(PLATFORM === "win32"
     ? [process.env.APPDATA || "", "firestore-cli", "service-account"]
     : [process.env.HOME || "", ".config", "firestore-cli", "service-account"]),
 );
+*/
 
 export const CREDENTIALS = path.resolve(
   ...(PLATFORM === "win32"

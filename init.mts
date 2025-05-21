@@ -34,7 +34,15 @@ export async function init(projectId: string, options: Options) {
         options.billingAccountId = billingAccountId;
       }
     }
-    await enableFirestoreAndLinkBilling(projectId, options);
+    const enableFirestore = await yesNo(
+      "Enable Firestore API and create Firestore DB?",
+    );
+    if (enableFirestore)
+      await enableFirestoreAndLinkBilling(projectId, options);
+    CLI_LOG(
+      `You have successfully initialized firestore CLI for the project: ${projectId}`,
+      "info",
+    );
     //
   } catch (e) {
     CLI_LOG(`Failed to init firestore-cli:\n\t` + e.message, "error");

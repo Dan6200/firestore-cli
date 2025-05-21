@@ -1,18 +1,19 @@
 import fs from "fs";
 import path from "path";
-import { SERVICE_ACCOUNT_KEY } from "../auth/file-paths.mjs";
 import { CLI_LOG } from "./logging.mjs";
+import { getInput } from "./interactive.mjs";
 
-export function saveKeyToFile(
+export async function saveKeyToFile(
   privateKeyData: string,
   date: string,
   oldKeyFile?: string,
 ) {
+  const filePath = await getInput("File path for Service Account key file: ");
   const key = Buffer.from(privateKeyData, "base64").toString("utf-8");
   const keyFile =
     oldKeyFile ??
     path.resolve(
-      SERVICE_ACCOUNT_KEY,
+      filePath,
       `service-account-key-${date.replace(":", "-")}.json`,
     );
   fs.writeFileSync(keyFile, key, "utf-8");
