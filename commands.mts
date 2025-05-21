@@ -7,11 +7,7 @@ import whereOptionParser from "./utils/where-option-parser.mjs";
 import { configureEnv } from "./configure-env.mjs";
 import { setProject } from "./set-project.mjs";
 import { enableFirestoreAndLinkBilling } from "./enable-firestore-and-link-billing.mjs";
-import {
-  CREDENTIALS,
-  SERVICE_ACCOUNT_KEY,
-  APP_CONFIG_DIR,
-} from "./auth/file-paths.mjs";
+import { CREDENTIALS, APP_CONFIG_DIR } from "./auth/file-paths.mjs";
 import { createServiceAccountWithKey } from "./create-service-account.mjs";
 import { init } from "./init.mjs";
 import { resetEnv } from "./reset.mjs";
@@ -74,8 +70,8 @@ try {
       `File path to the OAuth2 credentials JSON file. If this option is not provided, the program looks for the file in the \`${CREDENTIALS}\` directory`,
     )
     .option(
-      "-k, --service-account <VALUE>",
-      `Filepath to the service account key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT_KEY}\` directory.`,
+      "-k, --service-account-key <VALUE>",
+      "Filepath to the service account key file for authentication.",
     )
     .description(
       "Sets the Firestore CLI to use the specified project. <project-id>: The unique identifier of an existing Google Cloud project.",
@@ -119,15 +115,11 @@ try {
   program
     .command("service-account-create [project-id]")
     .description(
-      `Creates a new service account and generate a new service account key. Saves the key file at \`${SERVICE_ACCOUNT_KEY}\`.`,
+      `Creates a new service account and/or generates a new service account key.`,
     )
     .option(
-      "-c, --credentials <VALUE>",
-      `File path to the OAuth2 credentials JSON file. If this option is not provided, the program looks for the file in the \`${CREDENTIALS}\` directory`,
-    )
-    .option(
-      "-k, --service-account <VALUE>",
-      `Filepath to the service account key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT_KEY}\` directory.`,
+      "-k, --service-account-key <VALUE>",
+      `Filepath to the service account key file for Service Account key authentication.`,
     )
     .option(
       "--overwrite-key",
@@ -143,8 +135,8 @@ try {
       `File path to the OAuth2 credentials JSON file. If this option is not provided, the program looks for the file in the \`${CREDENTIALS}\` directory`,
     )
     .option(
-      "-k, --service-account <VALUE>",
-      `Filepath to the service account key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT_KEY}\` directory.`,
+      "-k, --service-account-key <VALUE>",
+      `Filepath to the service account key file for authentication.`,
     )
     .option("-b, --bulk", "Perform bulk add operations")
     .option(
@@ -173,8 +165,8 @@ try {
       `File path to the OAuth2 credentials JSON file. If this option is not provided, the program looks for the file in the \`${CREDENTIALS}\` directory`,
     )
     .option(
-      "-k, --service-account <VALUE>",
-      `Filepath to the service account key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT_KEY}\` directory.`,
+      "-k, --service-account-key <VALUE>",
+      `Filepath to the service account key file for authentication.`,
     )
     .option(
       "--database-id <VALUE>",
@@ -248,8 +240,8 @@ try {
       `File path to the OAuth2 credentials JSON file. If this option is not provided, the program looks for the file in the \`${CREDENTIALS}\` directory`,
     )
     .option(
-      "-k, --service-account <VALUE>",
-      `Filepath to the service account key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT_KEY}\` directory.`,
+      "-k, --service-account-key <VALUE>",
+      `Filepath to the service account key file for authentication.`,
     )
     .option(
       "--database-id <VALUE>",
@@ -274,12 +266,8 @@ try {
     .command("delete <collection> [document-ids...]")
     .description("Delete document(s) from a collection")
     .option(
-      "-c, --credentials <VALUE>",
-      `File path to the OAuth2 credentials JSON file. If this option is not provided, the program looks for the file in the \`${CREDENTIALS}\` directory`,
-    )
-    .option(
-      "-k, --service-account <VALUE>",
-      `Filepath to the service account key file for authentication.\nIf this is not provided then the program looks for the Service Account key in the \`${SERVICE_ACCOUNT_KEY}\` directory.`,
+      "-k, --service-account-key <VALUE>",
+      `Filepath to the service account key file for authentication.`,
     )
     .option(
       "--database-id <VALUE>",

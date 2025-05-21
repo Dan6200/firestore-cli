@@ -7,13 +7,13 @@ import { saveKeyToFile } from "../../msc.mjs";
 export async function createServiceAccountKey(
   auth: OAuth2Client,
   serviceAccountName: string,
-  keyFileName: string
+  keyFileName: string,
 ) {
   //
   if (!serviceAccountName) {
     CLI_LOG(
       "Failed to create service key: Must provide the service account name",
-      "error"
+      "error",
     );
     throw new Error();
   }
@@ -29,16 +29,16 @@ export async function createServiceAccountKey(
       spinner.succeed("Service account key created.");
       CLI_LOG(
         "Valid After: " + new Date(serviceAccountKey.validAfterTime),
-        "info"
+        "info",
       );
       CLI_LOG(
         "Valid Before: " + new Date(serviceAccountKey.validBeforeTime),
-        "info"
+        "info",
       );
-      saveKeyToFile(
+      await saveKeyToFile(
         serviceAccountKey.privateKeyData,
         serviceAccountKey.validAfterTime,
-        keyFileName
+        keyFileName,
       );
       return serviceAccountKey.name;
     }
