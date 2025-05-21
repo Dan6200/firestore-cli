@@ -1,5 +1,5 @@
-/****
- * const fs = require("fs");
+/*
+  const fs = require("fs");
 const yaml = require("js-yaml");
 const { parse } = require("csv-parse/sync");
 
@@ -18,4 +18,4 @@ function parseInput(filePath, fileType) {
       throw new Error("Unsupported file type. Use JSON, YAML, or CSV.");
   }
 }
-***************************/
+*/
