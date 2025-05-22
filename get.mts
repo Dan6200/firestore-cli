@@ -2,7 +2,6 @@
 import { Chalk } from "chalk";
 import ora from "ora";
 import { Options } from "commander";
-import { authenticateHelper } from "./utils/auth.mjs";
 import { printDocuments } from "./utils/print.mjs";
 import {
   CollectionReference,
@@ -12,17 +11,26 @@ import {
 import { initializePager } from "./init-pager.mjs";
 import handleWhereClause from "./utils/handle-where-clause.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
+import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
 
 const chalk = new Chalk({ level: 3 });
 
 export default async (collection: string, options: Options) => {
   let pager: any = null,
     failedToStartPager = null;
-  if (collection) ({ pager, failedToStartPager } = initializePager(options));
-  const spinner = ora("Fetching documents from " + collection + "\n").start();
   let error = false;
+  let spinner;
+  let db;
   try {
-    const db = await authenticateHelper(options);
+    spinner = ora("Authenticating Firestore DB").start();
+    db = await authenticateFirestore(options);
+    spinner.succeed("Done!");
+  } catch {
+    spinner.fail("Failed to authenticate to Firestore DB");
+  }
+  try {
+    if (collection) ({ pager, failedToStartPager } = initializePager(options));
+    spinner = ora("Fetching documents from " + collection + "\n").start();
     let snapshot: null | QuerySnapshot = null;
     if (options.where?.length > 0) {
       let ref: CollectionReference | Query = db.collection(collection);
@@ -46,7 +54,7 @@ export default async (collection: string, options: Options) => {
         snapshot,
         chalk,
         failedToStartPager,
-        options.whiteSpace
+        options.whiteSpace,
       );
     if (!failedToStartPager) {
       spinner.succeed("Done!");

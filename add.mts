@@ -1,10 +1,10 @@
 //cspell:disable
 import ora from "ora";
 import { Options } from "commander";
-import { authenticateHelper } from "./utils/auth.mjs";
 import { existsSync } from "fs";
 import { resolve } from "path";
 import { CLI_LOG } from "./utils/logging.mjs";
+import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
 
 export default async (collection: string, data: string, options: Options) => {
   let customId: string | undefined, customIds: string[] | undefined;
@@ -21,7 +21,7 @@ export default async (collection: string, data: string, options: Options) => {
     );
   const spinner = ora("Adding document(s) to " + collection + "\n").start();
   try {
-    const db = await authenticateHelper(options);
+    const db = await authenticateFirestore(options);
     let parsedData: object | null = null;
     if (options.file) {
       const inputFile = options.file;

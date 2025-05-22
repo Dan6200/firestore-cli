@@ -4,8 +4,6 @@ import get from "./get.mjs";
 import update from "./update.mjs";
 import deleteDoc from "./delete.mjs";
 import whereOptionParser from "./utils/where-option-parser.mjs";
-import { init } from "./init.mjs";
-import { resetEnv } from "./reset.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
 const program = new Command();
 
@@ -18,10 +16,6 @@ try {
   program
     .command("add <collection> [new-document-data]")
     .description("Add document to a collection")
-    .option(
-      "-c, --credentials <VALUE>",
-      `File path to the OAuth2 credentials JSON file. If this option is not provided, the program looks for the file in the \`${CREDENTIALS}\` directory`,
-    )
     .option(
       "-k, --service-account-key <VALUE>",
       `Filepath to the service account key file for authentication.`,
@@ -48,10 +42,6 @@ try {
   program
     .command("get <collection>")
     .description("Fetch documents from a collection")
-    .option(
-      "-c, --credentials <VALUE>",
-      `File path to the OAuth2 credentials JSON file. If this option is not provided, the program looks for the file in the \`${CREDENTIALS}\` directory`,
-    )
     .option(
       "-k, --service-account-key <VALUE>",
       `Filepath to the service account key file for authentication.`,
@@ -118,15 +108,12 @@ try {
       "--pager-args [ARGS...]",
       "The arguments which should be passed to the pager",
     )
+    .option("--debug", "Set log level to DEBUG")
     .action(get);
 
   program
     .command("update <collection> [data] [document-id...]")
     .description("Update document(s) in a collection")
-    .option(
-      "-c, --credentials <VALUE>",
-      `File path to the OAuth2 credentials JSON file. If this option is not provided, the program looks for the file in the \`${CREDENTIALS}\` directory`,
-    )
     .option(
       "-k, --service-account-key <VALUE>",
       `Filepath to the service account key file for authentication.`,
