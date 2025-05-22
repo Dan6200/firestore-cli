@@ -4,7 +4,7 @@ import { Options } from "commander";
 import { existsSync } from "fs";
 import { resolve } from "path";
 import { CLI_LOG } from "./utils/logging.mjs";
-import { authenticateHelper } from "./utils/auth.mjs";
+import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
 
 export default async (
   collection: string,
@@ -18,7 +18,7 @@ export default async (
     );
   }
   try {
-    const db = await authenticateHelper(options);
+    const db = await authenticateFirestore(options);
     if (options.file) {
       const inputFile = options.file;
       if (!existsSync(inputFile)) {

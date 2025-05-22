@@ -5,7 +5,7 @@ import { existsSync } from "fs";
 import { resolve } from "path";
 import { formatData, validateFileInput } from "./utils/data-mutation.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
-import { authenticateHelper } from "./utils/auth.mjs";
+import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
 
 export default async (
   collection: string,
@@ -24,7 +24,7 @@ export default async (
   const spinner = ora("Updating document(s) in " + collection + "\n").start();
   let parsedData = null;
   try {
-    const db = await authenticateHelper(options);
+    const db = await authenticateFirestore(options);
     let dataToUpdate: any = null;
     if (options.file) {
       const inputFile = options.file;
