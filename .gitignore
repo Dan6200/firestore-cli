@@ -8,3 +8,4 @@ credentials
 testing_data
 /built/
 .vscode
+/_jest.config.mjs
