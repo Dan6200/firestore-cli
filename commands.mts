@@ -11,7 +11,7 @@ try {
   program
     .name("firestore-cli")
     .description("CLI tool to query the google cloud firestore database")
-    .version("1.0.7");
+    .version("1.0.8");
 
   program
     .command("add <collection> [new-document-data]")

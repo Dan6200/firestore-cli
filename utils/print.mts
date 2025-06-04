@@ -2,15 +2,14 @@ import { Chalk } from "chalk";
 import { ChalkInstance } from "chalk";
 import { Options } from "commander";
 import { DocumentSnapshot, QuerySnapshot } from "@google-cloud/firestore";
-import { MockChalk } from "../types-and-interfaces.mjs";
 const chalk = new Chalk({ level: 3 });
 
 export function printDocuments(
   snapshot: QuerySnapshot | DocumentSnapshot,
-  chalk: ChalkInstance | MockChalk,
+  chalk: ChalkInstance,
   failedToStartPager = true,
   whiteSpace = 2,
-  stdOutput = ""
+  stdOutput = "",
 ) {
   const INDENT = " ".repeat(whiteSpace);
   const NEWLINE_AMOUNT = Math.floor(Math.max(1, Math.log2(whiteSpace)));
@@ -45,7 +44,7 @@ export function printDocuments(
           doc.data(),
           undefined,
           INDENT,
-          chalk
+          chalk,
         )},` + "\n".repeat(NEWLINE_AMOUNT);
     } else {
       output =
@@ -53,7 +52,7 @@ export function printDocuments(
           doc.data(),
           undefined,
           INDENT,
-          chalk
+          chalk,
         )}` + "\n".repeat(NEWLINE_AMOUNT);
     }
     if (!output) throw new Error("Error fetching documents!");
@@ -71,7 +70,7 @@ export function printObj(
   obj: object,
   level = 1,
   char: string,
-  chalk: ChalkInstance | MockChalk
+  chalk: ChalkInstance,
 ): string {
   let result = "{\n";
   let index = 1;
@@ -94,7 +93,7 @@ export function printObj(
         value,
         level + 1,
         char,
-        chalk
+        chalk,
       )}`;
     }
     // add a comma on all fields or items except the last
@@ -110,7 +109,7 @@ export const printSnapshot = async (
   snapshot: DocumentSnapshot | QuerySnapshot,
   { json, whiteSpace }: Options,
   failedToStartPager = false,
-  stdOutput = ""
+  stdOutput = "",
 ) => {
   let printableSnapshot: any;
 
@@ -130,7 +129,7 @@ export const printSnapshot = async (
       if (snapshot.empty) throw new Error("Query returned no documents");
       printableSnapshot = [];
       snapshot.forEach((doc) =>
-        printableSnapshot.push({ [doc.id]: doc.data() })
+        printableSnapshot.push({ [doc.id]: doc.data() }),
       );
     }
     stdOutput = JSON.stringify(printableSnapshot, null, whiteSpace ?? 2);
@@ -141,7 +140,7 @@ export const printSnapshot = async (
       snapshot,
       chalk,
       failedToStartPager,
-      whiteSpace
+      whiteSpace,
     );
   }
   return stdOutput;

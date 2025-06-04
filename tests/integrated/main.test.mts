@@ -1,76 +1,8 @@
-import handleWhereClause from "./utils/handle-where-clause.mjs";
-import { printDocuments, printObj } from "./utils/print.mjs";
-import { jest } from "@jest/globals";
-import { MockChalk } from "./types-and-interfaces.mjs";
+import handleWhereClause from "../../utils/handle-where-clause.mjs";
+import { printDocuments } from "../../utils/print.mjs";
 import { CollectionReference, Firestore } from "@google-cloud/firestore";
-import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
-import "dotenv/config";
-
-const chalk: MockChalk = {
-  green: jest.fn((text: string) => text),
-  blue: jest.fn((text: string) => text),
-  yellow: jest.fn((text: string) => text),
-  gray: jest.fn((text: string) => text),
-};
-
-describe("`printObj` function", () => {
-  it("should properly format a simple object", () => {
-    const obj = { name: "Alice", age: 30 };
-    const output = printObj(obj, 0, "    ", chalk as any);
-    expect(chalk.green).toHaveBeenCalledWith("'Alice'");
-    expect(chalk.blue).toHaveBeenCalledWith("30");
-    expect(output).toBe(
-      `
-{
-    name: 'Alice',
-    age: 30
-}`.trim(),
-    );
-  });
-  it("should correctly handle nested objects", () => {
-    const obj = { name: "Alice", address: { city: "Wonderland", zip: 1234 } };
-    const output = printObj(obj, 0, "    ", chalk as any);
-    expect(chalk.green).toHaveBeenCalledWith("'Alice'");
-    expect(chalk.green).toHaveBeenCalledWith("'Wonderland'");
-    expect(chalk.blue).toHaveBeenCalledWith("1234");
-    expect(output).toBe(
-      `
-{
-    name: 'Alice',
-    address: {
-        city: 'Wonderland',
-        zip: 1234
-    }
-}`.trim(),
-    );
-  });
-  it("should correctly handle array objects", () => {
-    const obj = {
-      name: "Alice",
-      address: { city: "Wonderland", zip: 1234 },
-      friends: ["Dinah the cat", "The white rabbit", "The mad hatter"],
-    };
-    const output = printObj(obj, 0, "    ", chalk as any);
-    expect(chalk.green).toHaveBeenCalledWith("'Alice'");
-    expect(chalk.green).toHaveBeenCalledWith("'Wonderland'");
-    expect(chalk.blue).toHaveBeenCalledWith("1234");
-    expect(output).toBe(
-      `
-{
-    name: 'Alice',
-    address: {
-        city: 'Wonderland',
-        zip: 1234
-    },
-    friends: [
-        "Dinah the cat",
-        "The white rabbit",
-        "The mad hatter"
-    ]
-}`.trim(),
-    );
-  });
-});
+import { authenticateFirestore } from "../../auth/authenticate-firestore.mjs";
+import { chalk } from "./../unit/__mocks__/chalk.mjs";
 
 describe("`handleWhereClause` function", () => {
   let ref: CollectionReference | null = null;
@@ -79,7 +11,7 @@ describe("`handleWhereClause` function", () => {
     const serviceAccountKey = await import(process.env.serviceAccountKey, {
       with: { type: "json" },
     });
-    db = await authenticateFirestore(serviceAccountKey);
+    db = await authenticateFirestore(serviceAccountKey); // Mock first...
     ref = db.collection("users");
     const batch = db.batch();
     batch.set(ref.doc("document_1"), { name: "Dan", age: 24, eye: "brown" });
@@ -91,7 +23,7 @@ describe("`handleWhereClause` function", () => {
   it("should be able to handle a simple where clause query", async () => {
     const whereClause = ["name", "==", "Dan"];
     const snap = await handleWhereClause(ref, whereClause as any).get();
-    const output = printDocuments(snap, chalk, false, 4);
+    const output = printDocuments(snap, chalk as any, false, 4);
     expect(output).toBe(
       `
 [
@@ -109,7 +41,7 @@ describe("`handleWhereClause` function", () => {
   it("should be able to handle a disjunct pair of clauses", async () => {
     const whereClause = ["name", "==", "Dave", "or", "name", "==", "Mary"];
     const snap = await handleWhereClause(ref, whereClause as any).get();
-    const output = printDocuments(snap, chalk, false, 4);
+    const output = printDocuments(snap, chalk as any, false, 4);
     expect(output).toBe(
       `
 [
@@ -149,7 +81,7 @@ describe("`handleWhereClause` function", () => {
       24,
     ];
     const snap = await handleWhereClause(ref, whereClause as any).get();
-    const output = printDocuments(snap, chalk, false, 4);
+    const output = printDocuments(snap, chalk as any, false, 4);
     expect(output).toBe(
       `
 [
@@ -183,7 +115,7 @@ describe("`handleWhereClause` function", () => {
       24,
     ];
     const snap = await handleWhereClause(ref, whereClause as any).get();
-    const output = printDocuments(snap, chalk, false, 4);
+    const output = printDocuments(snap, chalk as any, false, 4);
     expect(output).toBe(
       `
 [
