@@ -24,9 +24,11 @@ export default async (collection: string, options: Options) => {
   try {
     spinner = ora("Authenticating Firestore DB").start();
     db = await authenticateFirestore(options);
-    spinner.succeed("Done!");
-  } catch {
-    spinner.fail("Failed to authenticate to Firestore DB");
+    spinner.succeed("Successfully authenticated!");
+  } catch (error) {
+    spinner.fail("Failed to authenticate to Firestore DB: " + error.toString());
+    process.exitCode = 1;
+    process.exit();
   }
   try {
     if (collection) ({ pager, failedToStartPager } = initializePager(options));
