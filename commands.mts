@@ -7,6 +7,8 @@ import whereOptionParser from "./utils/where-option-parser.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
 const program = new Command();
 
+/* TODO: Big Deal!!! Replace all dynamic imports as older versions of node don't have those!!! */
+
 try {
   program
     .name("firestore-cli")
@@ -37,6 +39,7 @@ try {
       "--custom-ids [VALUE...]",
       "Allows the customization of the document id for bulk addition of documents. Must be used in conjunction with the --bulk flag or an error occurs",
     )
+    .option("--emulator", "Set to use with firestore emulator")
     .action(add);
 
   program
@@ -109,6 +112,7 @@ try {
       "The arguments which should be passed to the pager",
     )
     .option("--debug", "Set log level to DEBUG")
+    .option("--emulator", "Set to use with firestore emulator")
     .action(get);
 
   program
@@ -135,6 +139,8 @@ try {
       "-o, --overwrite",
       "Update the document by replace its existing data. A merge is done instead if this option is not set.",
     )
+    .option("--debug", "Set log level to DEBUG")
+    .option("--emulator", "Set to use with firestore emulator")
     .action(update);
 
   program
@@ -157,6 +163,8 @@ try {
       "--file-type <VALUE>",
       "Specify the file type of the input file. To be used in conjunction with the --file flag",
     )
+    .option("--debug", "Set log level to DEBUG")
+    .option("--emulator", "Set to use with firestore emulator")
     .action(deleteDoc);
 } catch (error) {
   CLI_LOG(error, "error");

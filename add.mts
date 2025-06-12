@@ -58,6 +58,7 @@ export default async (collection: string, data: string, options: Options) => {
           "Number of custom IDs must match the number of documents to be added",
         );
       bulkData.map((newData, index) => {
+        // TODO: see if you can optimize this by moving this out of the loop...
         const col = db.collection(collection);
         const ref = customIds ? col.doc(customIds[index]) : col.doc();
         batch.set(ref, newData);

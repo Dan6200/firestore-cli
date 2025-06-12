@@ -41,6 +41,7 @@ export default async (
         /*TODO: ...Add Support for YAML and CSV filetypes*/
       }
       if (!options.bulk && Object.keys(dataToUpdate).length > 1)
+        /* TODO: ...Use computed keys and nested destructuring for better convenience */
         throw new Error(
           "Invalid data format: For update operations without the --bulk flag, the data must be a single object, not an array.",
         );

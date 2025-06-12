@@ -1,108 +1,124 @@
-# Firestore CLI Tool
+### Firestore CLI - README
 
-## Setup Instructions
-
-### **User Guide: How to Obtain OAuth2 Credentials for `firestore-cli`**
-
-`firestore-cli` requires a `credentials.json` file to authenticate and interact with Google Cloud services. Here's how to obtain this file using the **Google Cloud Console** and the **`gcloud` CLI**.
+A lightweight command-line interface for interacting with Google Firestore, Firebase, and Google Cloud APIs. Streamline document management, queries, and administrative tasks directly from your terminal.
 
 ---
 
-## **1. Obtaining Credentials via Google Cloud Console**
+## 🔑 **Authentication Setup**
 
-### **Step 1: Access the Google Cloud Console**
+This tool requires a **Service Account Key** for API access. Here’s how to obtain credentials:
 
-1. Open your browser and go to the [Google Cloud Console](https://console.cloud.google.com/).
-2. Sign in with your Google account.
+### **Method 1: Google Cloud Console (Web UI)**
 
-### **Step 2: Create or Select a Project**
+1. **Go to** [Google Cloud Console](https://console.cloud.google.com/).
+2. **Select your project** → Navigate to _IAM & Admin_ → _Service Accounts_.
+3. **Create a Service Account**:
+   - Click _+ Create Service Account_.
+   - Name it (e.g., `firestore-cli`), assign `Firestore Admin`/`Editor` roles.
+4. **Generate Key**:
+   - Under _Actions_ (⋮), click _Manage Keys_ → _Add Key_ → _Create New Key_.
+   - Choose **JSON** → Download the file (e.g., `service-account.json`).
 
-1. In the top navigation bar, click the project dropdown and select an existing project or create a new one.
-2. Ensure the Firestore and required APIs are enabled:
-   - Navigate to **"APIs & Services" > "Library"**.
-   - Search for and enable the **Cloud Firestore API** and other APIs your application requires.
+### **Method 2: Firebase Console**
 
-### **Step 3: Create OAuth 2.0 Credentials**
+1. **Go to** [Firebase Console](https://console.firebase.google.com/).
+2. **Select your project** → Click ⚙️ (Settings) → _Project settings_.
+3. **Navigate to Service Accounts**:
+   - Go to _Service accounts_ tab.
+4. **Generate Key**:
+   - Click _Generate new private key_ → Confirm → Download JSON file.
+   - _(Uses default Firebase service account with Editor permissions)_
 
-1. Navigate to **"APIs & Services" > "Credentials"** in the left-hand menu.
-2. Click **"Create Credentials"** and select **"OAuth client ID"**.
-   - If prompted, configure your **OAuth consent screen**:
-     - Enter an application name and other required fields.
-     - Add `http://localhost` or any custom redirect URIs relevant to your workflow.
-   - Save the settings and return to credentials creation.
-3. Choose **"Desktop Application"** as the application type.
-4. Enter a name for the credentials (e.g., "Firestore CLI Credentials").
-5. Click **"Create"**. A dialog will display your client ID and client secret.
+### **Method 3: Google Cloud CLI (`gcloud`)**
 
-### **Step 4: Download the `credentials.json` File**
+1. **Install the [Google Cloud SDK](https://cloud.google.com/sdk/docs/install)**.
+2. **Authenticate and configure**:
+   ```bash
+   gcloud auth login
+   gcloud config set project YOUR_PROJECT_ID
+   ```
+3. **Create Service Account and Key**:
 
-1. Click **"Download JSON"** to save your credentials as a `credentials.json` file.
-2. Move the file to a secure and accessible location.
-3. Provide the file path to `firestore-cli` during setup or as a command-line argument.
+   ```bash
+   gcloud iam service-accounts create firestore-cli \
+     --display-name="Firestore CLI Service Account"
 
----
+   gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+     --member="serviceAccount:firestore-cli@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+     --role="roles/datastore.user"
 
-## **3. Providing Credentials to `firestore-cli`**
+   gcloud iam service-accounts keys create service-account.json \
+     --iam-account=firestore-cli@YOUR_PROJECT_ID.iam.gserviceaccount.com
+   ```
 
-`firestore-cli` requires the path to the `credentials.json` file. Provide this path in one of the following ways:
+### **Configure the CLI**
 
-### **Option 1: CLI Argument**
-
-Use the `--credentials` or `-c` flag to specify the file:
+Set your environment variable to point to the key:
 
 ```bash
-firestore-cli --credentials /path/to/credentials.json
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account.json"
 ```
 
-### **Option 2: Default Location**
-
-Place the file in a default directory (e.g., `~/.config/firestore-cli/credentials.json`, or `%APPDATA%\firestore-cli\credentials.json`) to avoid specifying it each time.
+_(Add this to your shell profile (e.g., `.bashrc`, `.zshrc`) for persistence)_
 
 ---
 
-## **User Guide: How to Obtain and Use Service Account Keys for `firestore-cli`**
+## 🚀 **Installation**
 
-`firestore-cli` supports authentication using **service account keys**, which are particularly useful for server-to-server interactions with Google Cloud services. Follow this guide to generate and configure your service account key.
+```bash
+npm install -g firestore-cli  # Requires Node.js v16+
+```
 
 ---
 
-## **1. Obtaining Service Account Keys via Google Cloud Console**
+## 💻 **Basic Usage**
 
-### **Step 1: Access the Google Cloud Console**
+```bash
+firestore-cli [command] [options]
+```
 
-1. Open your browser and navigate to the [Google Cloud Console](https://console.cloud.google.com/).
-2. Sign in with your Google account.
+### **Commands**
 
-### **Step 2: Create or Select a Project**
+| Command              | Description                     | Example                                                   |
+| -------------------- | ------------------------------- | --------------------------------------------------------- |
+| `get <doc-path>`     | Fetch a document                | `firestore-cli get users/alice`                           |
+| `set <doc-path>`     | Create/update a document (JSON) | `firestore-cli set products/laptop '{price: 999}'`        |
+| `query <collection>` | Run a Firestore query           | `firestore-cli query orders --where "status==='shipped'"` |
+| `delete <doc-path>`  | Delete a document               | `firestore-cli delete inventory/old-item`                 |
+| `export <path>`      | Export data to JSON             | `firestore-cli export backups/ --all-collections`         |
 
-1. Click the project dropdown in the top navigation bar and select an existing project or create a new one.
-2. Enable the **Cloud Firestore API** and other required APIs for your project:
-   - Navigate to **"APIs & Services" > "Library"**.
-   - Search for **"Cloud Firestore API"** and click **Enable**.
+### **Options**
 
-### **Step 3: Create a Service Account**
+- `--project <id>`: Specify a Google Cloud project ID.
+- `--emulator`: Connect to a local Firestore emulator (default port: `8080`).
+- `--debug`: Enable verbose logging.
 
-1. Go to **"IAM & Admin" > "Service Accounts"** in the left-hand menu.
-2. Click **"Create Service Account"**.
-   - Enter a name for the service account (e.g., "Firestore CLI Service Account").
-   - (Optional) Add a description.
-   - Click **Create and Continue**.
+---
 
-### **Step 4: Assign a Role**
+## 🔒 **Security Notes**
 
-1. In the "Grant this service account access to project" step:
-   - Assign the **Cloud Datastore Owner** role (or a more restrictive role suitable for your needs, such as **Cloud Datastore User**).
-   - Click **Continue**.
+- **Never commit `service-account.json` to version control**! Add it to `.gitignore`.
+- Use **least-privilege roles** (e.g., `roles/datastore.user` instead of `roles/owner`).
+- For production, leverage **secret managers** (e.g., GCP Secret Manager).
 
-### **Step 5: Create and Download the Key**
+---
 
-1. Skip adding users in the "Grant users access to this service account" step and click **Done**.
-2. Locate the newly created service account in the list and click the three-dot menu (⋮) on the right.
-3. Select **"Manage Keys"** > **"Add Key"** > **"Create New Key"**.
-4. Choose **JSON** as the key type and click **Create**.
-   - A JSON file containing your service account key will download automatically.
+## 🛠️ **Development**
 
-### **Step 6: Secure the Key**
+Contribute or extend functionality:
 
-- Move the downloaded JSON file to a secure and accessible location.
-- Treat this file like a password—do not expose it publicly.
+```bash
+git clone https://github.com/your-repo/firestore-cli.git
+cd firestore-cli
+npm install
+npm link  # Test locally
+```
+
+---
+
+> **Need Help?**  
+> Run `firestore-cli --help` or open an [issue](https://github.com/your-repo/firestore-cli/issues).
+
+---
+
+Built with ❤️ by [Your Name] | [MIT License](LICENSE).
