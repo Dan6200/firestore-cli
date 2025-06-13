@@ -23,11 +23,18 @@ export async function authenticateFirestore({
   //
   let projectId: string | undefined;
   if (emulator)
+    // Use a dummy key file that only contains the project ID.
     ({
       default: { project_id: projectId },
     } = await import(resolve(keyFile), {
       with: { type: "json" },
     }));
 
+  if (process.env.SERVICE_ACCOUNT_KEY)
+    return new Firestore({
+      projectId,
+      credentials: JSON.parse(process.env.SERVICE_ACCOUNT_KEY),
+      databaseId,
+    });
   return new Firestore({ projectId, keyFile, databaseId });
 }
