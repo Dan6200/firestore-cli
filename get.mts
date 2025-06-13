@@ -48,7 +48,9 @@ export default async (collection: string, options: Options) => {
     let stdOutput = null;
     if (options.json) {
       const snapArray: any[] = [];
-      snapshot.forEach((doc) => snapArray.push({ [doc.id]: doc.data() }));
+      snapshot.forEach((doc) =>
+        snapArray.push({ id: doc.id, data: doc.data() }),
+      );
       stdOutput = JSON.stringify(snapArray, null, options.whiteSpace ?? 2);
       if (failedToStartPager) process.stdout.write(stdOutput);
     } else
