@@ -9,7 +9,7 @@ export async function authenticateFirestore({
   debug,
   emulator,
 }: Options) {
-  if ((!keyFile || !process.env.SERVICE_ACCOUNT_KEY) && !emulator)
+  if (!keyFile && !process.env.SERVICE_ACCOUNT_KEY && !emulator)
     throw new Error(
       "Must provide Service Account key to authenticate Firestore Database",
     );
