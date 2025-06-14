@@ -20,7 +20,7 @@ try {
     .description("Add document to a collection")
     .option(
       "-k, --service-account-key <VALUE>",
-      `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY env variable is set.`,
+      `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY or the GOOGLE_APPLICATION_CREDENTIALS env variable is set.`,
     )
     .option("-b, --bulk", "Perform bulk add operations")
     .option(
@@ -47,7 +47,7 @@ try {
     .description("Fetch documents from a collection")
     .option(
       "-k, --service-account-key <VALUE>",
-      `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY env variable is set.`,
+      `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY or the GOOGLE_APPLICATION_CREDENTIALS env variable is set.`,
     )
     .option(
       "--database-id <VALUE>",
@@ -120,7 +120,7 @@ try {
     .description("Update document(s) in a collection")
     .option(
       "-k, --service-account-key <VALUE>",
-      `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY env variable is set.`,
+      `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY or the GOOGLE_APPLICATION_CREDENTIALS env variable is set.`,
     )
     .option(
       "--database-id <VALUE>",
@@ -148,7 +148,7 @@ try {
     .description("Delete document(s) from a collection")
     .option(
       "-k, --service-account-key <VALUE>",
-      `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY env variable is set.`,
+      `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY or the GOOGLE_APPLICATION_CREDENTIALS env variable is set.`,
     )
     .option(
       "--database-id <VALUE>",
