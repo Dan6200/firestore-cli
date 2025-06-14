@@ -12,11 +12,12 @@ import { initializePager } from "./init-pager.mjs";
 import handleWhereClause from "./utils/handle-where-clause.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
 import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
+import { ChildProcess } from "child_process";
 
 const chalk = new Chalk({ level: 3 });
 
 export default async (collection: string, options: Options) => {
-  let pager: any = null,
+  let pager: ChildProcess = null,
     failedToStartPager = null;
   let error = false;
   let spinner;
@@ -30,10 +31,12 @@ export default async (collection: string, options: Options) => {
     process.exitCode = 1;
     process.exit();
   }
+
+  if (collection) ({ pager, failedToStartPager } = initializePager(options));
+
+  let snapshot: null | QuerySnapshot = null;
   try {
-    if (collection) ({ pager, failedToStartPager } = initializePager(options));
     spinner = ora("Fetching documents from " + collection + "\n").start();
-    let snapshot: null | QuerySnapshot = null;
     if (options.where?.length > 0) {
       let ref: CollectionReference | Query = db.collection(collection);
       snapshot = await handleWhereClause(ref, options.where).get();
@@ -44,8 +47,15 @@ export default async (collection: string, options: Options) => {
     if (failedToStartPager) {
       spinner.succeed("Done!");
     }
-    //
-    let stdOutput = null;
+  } catch (error) {
+    pager.kill();
+    spinner.fail("Failed to fetch document path: " + error.toString());
+    process.exitCode = 1;
+    process.exit();
+  }
+  //
+  let stdOutput = null;
+  try {
     if (options.json) {
       const snapArray: any[] = [];
       snapshot.forEach((doc) =>
