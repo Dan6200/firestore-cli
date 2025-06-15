@@ -12,13 +12,9 @@ import { initializePager } from "./init-pager.mjs";
 import handleWhereClause from "./utils/handle-where-clause.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
 import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
-import { ChildProcess } from "child_process";
-
 const chalk = new Chalk({ level: 3 });
 
-export default async (collection: string, options: Options) => {
-  let pager: ChildProcess = null,
-    failedToStartPager = null;
+export default async (path: string, options: Options) => {
   let error = false;
   let spinner;
   let db;
@@ -27,29 +23,30 @@ export default async (collection: string, options: Options) => {
     db = await authenticateFirestore(options);
     spinner.succeed("Successfully authenticated!");
   } catch (error) {
-    spinner.fail("Failed to authenticate to Firestore DB: " + error.toString());
+    spinner.fail("Failed to authenticate to Firestore DB.");
+    CLI_LOG(error.toString(), "error");
     process.exitCode = 1;
     process.exit();
   }
 
-  if (collection) ({ pager, failedToStartPager } = initializePager(options));
+  const { pager, failedToStartPager } = initializePager(options);
 
   let snapshot: null | QuerySnapshot = null;
   try {
-    spinner = ora("Fetching documents from " + collection + "\n").start();
-    if (options.where?.length > 0) {
-      let ref: CollectionReference | Query = db.collection(collection);
-      snapshot = await handleWhereClause(ref, options.where).get();
-    } else {
-      snapshot = await db.collection(collection).get();
-    }
-    //
-    if (failedToStartPager) {
-      spinner.succeed("Done!");
-    }
+    spinner = ora("Fetching documents from " + path + "\n").start();
+    snapshot = await db.collection(path).get();
+    if (failedToStartPager) spinner.succeed("Done!");
+    // TODO: Move this to its own subcommand...
+    // if (options.where?.length > 0) {
+    //   let ref: CollectionReference | Query = db.collection(path);
+    //   snapshot = await handleWhereClause(ref, options.where).get();
+    // } else {}
   } catch (error) {
     pager.kill();
-    spinner.fail("Failed to fetch document path: " + error.toString());
+    spinner.fail("Failed to fetch document path.");
+    if (error.message.includes("not found"))
+      CLI_LOG(`Cannot find the resource at the given path ${path}`, "error");
+    else CLI_LOG(error.toString(), "error");
     process.exitCode = 1;
     process.exit();
   }
