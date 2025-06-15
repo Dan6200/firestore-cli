@@ -6,7 +6,7 @@ import { resolve } from "path";
 import { CLI_LOG } from "./utils/logging.mjs";
 import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
 
-export default async (collection: string, data: string, options: Options) => {
+export default async (path: string, data: string, options: Options) => {
   let customId: string | undefined, customIds: string[] | undefined;
   if (options.customId) ({ customId } = options);
   if (options.customIds)
@@ -19,7 +19,7 @@ export default async (collection: string, data: string, options: Options) => {
     throw new Error(
       "Must provide new document data as an argument or a file containing the data using the --file flag.",
     );
-  const spinner = ora("Adding document(s) to " + collection + "\n").start();
+  const spinner = ora("Adding document(s) to " + path + "\n").start();
   try {
     const db = await authenticateFirestore(options);
     let parsedData: object | null = null;
@@ -59,7 +59,7 @@ export default async (collection: string, data: string, options: Options) => {
         );
       bulkData.map((newData, index) => {
         // TODO: see if you can optimize this by moving this out of the loop...
-        const col = db.collection(collection);
+        const ref = db.doc(path);
         const ref = customIds ? col.doc(customIds[index]) : col.doc();
         batch.set(ref, newData);
       });
@@ -69,7 +69,7 @@ export default async (collection: string, data: string, options: Options) => {
         throw new Error("Failed to add new documents: " + e.message);
       }
     } else {
-      const col = db.collection(collection);
+      const col = db.path(path);
       const doc = customId ? col.doc(customId) : col.doc();
       if (Array.isArray(parsedData)) {
         throw new Error(
