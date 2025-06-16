@@ -121,4 +121,4 @@ npm link  # Test locally
 
 ---
 
-Built with ❤️ by [Your Name] | [MIT License](LICENSE).
+Built with ❤️ by Daniel Nyong | [MIT License](LICENSE).
