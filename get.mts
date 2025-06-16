@@ -2,13 +2,8 @@
 import { Chalk } from "chalk";
 import ora from "ora";
 import { Options } from "commander";
-import { printDocuments } from "./utils/print.mjs";
-import {
-  CollectionReference,
-  DocumentSnapshot,
-  Query,
-  QuerySnapshot,
-} from "@google-cloud/firestore";
+import { printDocuments } from "./utils/print/documents.mjs";
+import { DocumentSnapshot, QuerySnapshot } from "@google-cloud/firestore";
 import { initializePager } from "./init-pager.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
 import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
