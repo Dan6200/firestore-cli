@@ -9,7 +9,6 @@ import {
   QuerySnapshot,
 } from "@google-cloud/firestore";
 import { initializePager } from "./init-pager.mjs";
-import handleWhereClause from "./utils/handle-where-clause.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
 import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
 const chalk = new Chalk({ level: 3 });
@@ -17,7 +16,7 @@ const chalk = new Chalk({ level: 3 });
 export default async (path: string, options: Options) => {
   let error = false;
   let spinner;
-  let db;
+  let db: FirebaseFirestore.Firestore;
   try {
     spinner = ora("Authenticating Firestore DB").start();
     db = await authenticateFirestore(options);
