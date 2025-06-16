@@ -5,12 +5,15 @@ import { Options } from "commander";
 import { printDocuments } from "./utils/print.mjs";
 import {
   CollectionReference,
+  DocumentSnapshot,
   Query,
   QuerySnapshot,
 } from "@google-cloud/firestore";
 import { initializePager } from "./init-pager.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
 import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
+import { getFirestoreReference } from "./utils/get-firestore-reference.mjs";
+import { printJSON } from "./utils/print/json.mjs";
 const chalk = new Chalk({ level: 3 });
 
 export default async (path: string, options: Options) => {
@@ -30,10 +33,11 @@ export default async (path: string, options: Options) => {
 
   const { pager, failedToStartPager } = initializePager(options);
 
-  let snapshot: null | QuerySnapshot = null;
+  let snapshot: null | QuerySnapshot | DocumentSnapshot = null;
   try {
     spinner = ora("Fetching documents from " + path + "\n").start();
-    snapshot = await db.collection(path).get();
+    const ref = getFirestoreReference(db, path);
+    snapshot = await ref.get();
     if (failedToStartPager) spinner.succeed("Done!");
     // TODO: Move this to its own subcommand...
     // if (options.where?.length > 0) {
@@ -53,11 +57,7 @@ export default async (path: string, options: Options) => {
   let stdOutput = null;
   try {
     if (options.json) {
-      const snapArray: any[] = [];
-      snapshot.forEach((doc) =>
-        snapArray.push({ id: doc.id, data: doc.data() }),
-      );
-      stdOutput = JSON.stringify(snapArray, null, options.whiteSpace ?? 2);
+      stdOutput = printJSON(snapshot, options);
       if (failedToStartPager) process.stdout.write(stdOutput);
     } else
       stdOutput = printDocuments(
