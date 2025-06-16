@@ -10,6 +10,7 @@ import {
   CollectionReference,
   DocumentReference,
 } from "@google-cloud/firestore";
+import { readFile } from "fs/promises";
 
 export default async (path: string, data: string, options: Options) => {
   // No need for customIds as we'll be using document/collection paths.
@@ -39,9 +40,7 @@ export default async (path: string, data: string, options: Options) => {
         );
       }
       if (!options.fileType || options.fileType.toUpperCase() === "JSON")
-        ({ default: parsedData } = await import(resolve(inputFile), {
-          with: { type: "json" },
-        }));
+        parsedData = JSON.parse(await readFile(resolve(inputFile), "utf8"));
       else {
         /*TODO: ...Add Support for YAML and CSV filetypes*/
       }
@@ -70,7 +69,7 @@ export default async (path: string, data: string, options: Options) => {
         throw new Error("Path must be to a collection for bulk operations");
       bulkData.map(({ id, data }) => {
         const docRef = ref.doc(id);
-        batch.set(docRef, data);
+        batch.set(docRef, data, { merge: options.merge });
       });
       try {
         await batch.commit();
