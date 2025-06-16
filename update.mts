@@ -1,9 +1,12 @@
+/* TODO: this is buggy */
+/*
 //cspell:disable
 import ora from "ora";
 import { Options } from "commander";
 import { existsSync } from "fs";
 import { resolve } from "path";
-import { formatData, validateFileInput } from "./utils/data-mutation.mjs";
+import { validateFileInput } from "./utils/validate-file-input.mjs";
+// import { formatData } from "./utils/format-data.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
 import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
 
@@ -38,10 +41,8 @@ export default async (
           with: { type: "json" },
         }));
       } else {
-        /*TODO: ...Add Support for YAML and CSV filetypes*/
       }
       if (!options.bulk && Object.keys(dataToUpdate).length > 1)
-        /* TODO: ...Use computed keys and nested destructuring for better convenience */
         throw new Error(
           "Invalid data format: For update operations without the --bulk flag, the data must be a single object, not an array.",
         );
@@ -96,3 +97,4 @@ export default async (
     process.exitCode = 1;
   }
 };
+*/
