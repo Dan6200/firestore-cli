@@ -1,6 +1,6 @@
 import { ChalkInstance } from "chalk";
 import { DocumentSnapshot, QuerySnapshot } from "@google-cloud/firestore";
-import { printObj } from "./index.mjs";
+import { printObj } from "./object.mjs";
 
 export function printDocuments(
   snapshot: QuerySnapshot | DocumentSnapshot,
