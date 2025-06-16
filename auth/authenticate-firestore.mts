@@ -2,6 +2,7 @@ import { Firestore } from "@google-cloud/firestore";
 import { Options } from "commander";
 import { CLI_LOG } from "../utils/logging.mjs";
 import { resolve } from "path";
+import { readFile } from "fs/promises";
 
 export async function authenticateFirestore({
   serviceAccountKey: keyFile,
@@ -29,11 +30,7 @@ export async function authenticateFirestore({
   let projectId: string | undefined;
   if (emulator)
     // Use a dummy key file that only contains the project ID.
-    ({
-      default: { project_id: projectId },
-    } = await import(resolve(keyFile), {
-      with: { type: "json" },
-    }));
+    projectId = await readFile(resolve(keyFile), "utf8");
 
   let firestore;
   if (process.env.SERVICE_ACCOUNT_KEY) {

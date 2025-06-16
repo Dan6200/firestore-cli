@@ -5,6 +5,7 @@ import { existsSync } from "fs";
 import { resolve } from "path";
 import { CLI_LOG } from "./utils/logging.mjs";
 import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
+import { readFile } from "fs/promises";
 
 export default async (
   collection: string,
@@ -27,9 +28,7 @@ export default async (
         );
       }
       if (!options.fileType || options.fileType.toUpperCase() === "JSON")
-        ({ default: documentIds } = await import(resolve(inputFile), {
-          with: { type: "json" },
-        }));
+        documentIds = await readFile(resolve(inputFile), "utf8");
       else {
         /*TODO: ...Add Support for YAML and CSV filetypes*/
       }

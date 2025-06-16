@@ -37,6 +37,7 @@ export default async (
         );
       }
       if (!options.fileType || options.fileType.toUpperCase() === "JSON") {
+			TODO: change to readFile from 'fs/promises'
         ({ default: dataToUpdate } = await import(resolve(inputFile), {
           with: { type: "json" },
         }));

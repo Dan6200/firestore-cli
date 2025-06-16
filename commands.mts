@@ -1,7 +1,6 @@
 import { Command } from "commander";
-import add from "./add.mjs";
+import set from "./set.mjs";
 import get from "./get.mjs";
-import update from "./update.mjs";
 import deleteDoc from "./delete.mjs";
 import whereOptionParser from "./utils/where-option-parser.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
@@ -39,8 +38,9 @@ try {
       "--custom-ids [VALUE...]",
       "Allows the customization of the document id for bulk addition of documents. Must be used in conjunction with the --bulk flag or an error occurs",
     )
+    .option("--merge", "Option to overwrite or merge existing data if any")
     .option("--emulator", "Set to use with firestore emulator")
-    .action(add);
+    .action(set);
 
   program
     .command("get <collection>")
@@ -116,34 +116,6 @@ try {
     .action(get);
 
   program
-    .command("update <collection> [data] [document-id...]")
-    .description("Update document(s) in a collection")
-    .option(
-      "-k, --service-account-key <VALUE>",
-      `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY or the GOOGLE_APPLICATION_CREDENTIALS env variable is set.`,
-    )
-    .option(
-      "--database-id <VALUE>",
-      "Specifies the database Id. If not specified `(default)` is used.",
-    )
-    .option("-b, --bulk", "Perform bulk update operations")
-    .option(
-      "-f --file <VALUE>",
-      "Read input from a file.\nData is in the form of an object with the keys being the document IDs of the document(s) to be updated and the value being the new data.\nUnless the --file-type flag is set, the file is assumed to be in JSON format",
-    )
-    .option(
-      "--file-type <VALUE>",
-      "Specify the file type of the input file. To be used in conjunction with the --file flag",
-    )
-    .option(
-      "-o, --overwrite",
-      "Update the document by replace its existing data. A merge is done instead if this option is not set.",
-    )
-    .option("--debug", "Set log level to DEBUG")
-    .option("--emulator", "Set to use with firestore emulator")
-    .action(update);
-
-  program
     .command("delete <collection> [document-ids...]")
     .description("Delete document(s) from a collection")
     .option(
@@ -166,6 +138,34 @@ try {
     .option("--debug", "Set log level to DEBUG")
     .option("--emulator", "Set to use with firestore emulator")
     .action(deleteDoc);
+
+  // program
+  //   .command("update <collection> [data] [document-id...]")
+  //   .description("Update document(s) in a collection")
+  //   .option(
+  //     "-k, --service-account-key <VALUE>",
+  //     `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY or the GOOGLE_APPLICATION_CREDENTIALS env variable is set.`,
+  //   )
+  //   .option(
+  //     "--database-id <VALUE>",
+  //     "Specifies the database Id. If not specified `(default)` is used.",
+  //   )
+  //   .option("-b, --bulk", "Perform bulk update operations")
+  //   .option(
+  //     "-f --file <VALUE>",
+  //     "Read input from a file.\nData is in the form of an object with the keys being the document IDs of the document(s) to be updated and the value being the new data.\nUnless the --file-type flag is set, the file is assumed to be in JSON format",
+  //   )
+  //   .option(
+  //     "--file-type <VALUE>",
+  //     "Specify the file type of the input file. To be used in conjunction with the --file flag",
+  //   )
+  //   .option(
+  //     "-o, --overwrite",
+  //     "Update the document by replace its existing data. A merge is done instead if this option is not set.",
+  //   )
+  //   .option("--debug", "Set log level to DEBUG")
+  //   .option("--emulator", "Set to use with firestore emulator")
+  //   .action(update);
 } catch (error) {
   CLI_LOG(error, "error");
 }
