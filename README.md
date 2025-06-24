@@ -89,15 +89,13 @@ firestore-cli [command] [options]
 
 ### **Options**
 
-- `--project <id>`: Specify a Google Cloud project ID.
-- `--emulator`: Connect to a local Firestore emulator (default port: `8080`).
 - `--debug`: Enable verbose logging.
 
 ---
 
 ## 🔒 **Security Notes**
 
-- **Never commit `service-account.json` to version control**! Add it to `.gitignore`.
+- **Never commit `service-account-key.json` to version control**! Add it to `.gitignore`.
 - Use **least-privilege roles** (e.g., `roles/datastore.user` instead of `roles/owner`).
 - For production, leverage **secret managers** (e.g., GCP Secret Manager).
 

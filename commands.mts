@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import set from "./set.mjs";
 import get from "./get.mjs";
+import query from "./query/main.mjs";
 import deleteDoc from "./delete.mjs";
 import whereOptionParser from "./utils/where-option-parser.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
@@ -12,16 +13,18 @@ try {
   program
     .name("firestore-cli")
     .description("CLI tool to query the google cloud firestore database")
-    .version("1.0.8");
+    .version("1.0.8.2");
 
   program
-    .command("add <collection> [new-document-data]")
-    .description("Add document to a collection")
+    .command("set <path> [new-document-data]")
+    .description(
+      "Set document to a path. Adds or updates documents. In the case of an update can overwrite or merge based on the --merge option.",
+    )
     .option(
       "-k, --service-account-key <VALUE>",
       `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY or the GOOGLE_APPLICATION_CREDENTIALS env variable is set.`,
     )
-    .option("-b, --bulk", "Perform bulk add operations")
+    .option("-b, --bulk", "Perform bulk set operations")
     .option(
       "-f --file <VALUE>",
       "Read input from a file. Unless the --file-type flag is set, the file is assumed to be in JSON format",
@@ -39,19 +42,16 @@ try {
       "Allows the customization of the document id for bulk addition of documents. Must be used in conjunction with the --bulk flag or an error occurs",
     )
     .option("--merge", "Option to overwrite or merge existing data if any")
-    .option("--emulator", "Set to use with firestore emulator")
+    .option("--no-merge", "set --merge option to false.")
+    .option("--debug", "Set log level to DEBUG")
     .action(set);
 
   program
-    .command("get <collection>")
-    .description("Fetch documents from a collection")
+    .command("query <collection>")
+    .description("")
     .option(
       "-k, --service-account-key <VALUE>",
       `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY or the GOOGLE_APPLICATION_CREDENTIALS env variable is set.`,
-    )
-    .option(
-      "--database-id <VALUE>",
-      "Specifies the database Id. If not specified `(default)` is used.",
     )
     .option(
       "-w, --where [VALUE...]",
@@ -95,6 +95,19 @@ try {
       "-l, --limit <VALUE>",
       "Limit results to `VALUE` count documents. To be implemented soon.",
     )
+    .action(query);
+
+  program
+    .command("get <path>")
+    .description("Fetch documents from a given path")
+    .option(
+      "-k, --service-account-key <VALUE>",
+      `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY or the GOOGLE_APPLICATION_CREDENTIALS env variable is set.`,
+    )
+    .option(
+      "--database-id <VALUE>",
+      "Specifies the database Id. If not specified `(default)` is used.",
+    )
     .option(
       "-ws, --white-space <VALUE>",
       "Numerical value that determines the amount of whitespace and indentation the documents should be printed with. Maximum value is 8",
@@ -112,12 +125,11 @@ try {
       "The arguments which should be passed to the pager",
     )
     .option("--debug", "Set log level to DEBUG")
-    .option("--emulator", "Set to use with firestore emulator")
     .action(get);
 
   program
-    .command("delete <collection> [document-ids...]")
-    .description("Delete document(s) from a collection")
+    .command("delete <path>")
+    .description("Delete document(s) from a given path")
     .option(
       "-k, --service-account-key <VALUE>",
       `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY or the GOOGLE_APPLICATION_CREDENTIALS env variable is set.`,
@@ -136,12 +148,11 @@ try {
       "Specify the file type of the input file. To be used in conjunction with the --file flag",
     )
     .option("--debug", "Set log level to DEBUG")
-    .option("--emulator", "Set to use with firestore emulator")
     .action(deleteDoc);
 
   // program
-  //   .command("update <collection> [data] [document-id...]")
-  //   .description("Update document(s) in a collection")
+  //   .command("update <path> [data] [document-id...]")
+  //   .description("Update document(s) in a path")
   //   .option(
   //     "-k, --service-account-key <VALUE>",
   //     `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY or the GOOGLE_APPLICATION_CREDENTIALS env variable is set.`,
@@ -164,7 +175,6 @@ try {
   //     "Update the document by replace its existing data. A merge is done instead if this option is not set.",
   //   )
   //   .option("--debug", "Set log level to DEBUG")
-  //   .option("--emulator", "Set to use with firestore emulator")
   //   .action(update);
 } catch (error) {
   CLI_LOG(error, "error");

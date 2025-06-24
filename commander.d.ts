@@ -2,7 +2,6 @@ import { Command } from "commander";
 
 declare module "commander" {
   interface Options {
-    emulator?: boolean;
     debug?: boolean;
     serviceAccountKey?: string;
     databaseId?: string;

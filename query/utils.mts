@@ -3,7 +3,7 @@ import { Condition, WhereClause, WhereCondition } from "commander";
 
 export default function handleWhereClause(
   ref: CollectionReference | Query,
-  where: Condition
+  where: Condition,
 ) {
   if (!where || !where.length)
     throw new Error("Must contain where clause if the --where flag is used");
@@ -64,7 +64,7 @@ function evaluate(
   ref: Query,
   cond1: WhereClause,
   Op: "and" | "or",
-  cond2: WhereClause
+  cond2: WhereClause,
 ) {
   Op = Op.toLowerCase() as "and" | "or";
   if (Op !== "and" && Op !== "or")
@@ -72,12 +72,12 @@ function evaluate(
   return ref.where(
     Filter[Op](
       Filter.where(cond1[0], cond1[1], cond1[2]),
-      Filter.where(cond2[0], cond2[1], cond2[2])
-    )
+      Filter.where(cond2[0], cond2[1], cond2[2]),
+    ),
   );
 }
 
-/***
+/*
  * evalCondition(conList, conOp):
  * 	if conOp IN conList:
  * 		opIdx = findFirstIndex(conOp, conList)
@@ -88,7 +88,7 @@ function evaluate(
  * 			return;
  * 		return eval(cond1, conOp, cond2)
  * 	return conList
- ***/
+ */
 
 function isValidWhereCondition(condition: any): condition is WhereCondition {
   return [
