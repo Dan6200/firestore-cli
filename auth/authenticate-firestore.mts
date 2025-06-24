@@ -8,17 +8,8 @@ export async function authenticateFirestore({
   serviceAccountKey: keyFile,
   databaseId,
   debug,
-  emulator,
 }: Options) {
-  if (
-    !keyFile &&
-    !process.env.SERVICE_ACCOUNT_KEY &&
-    !process.env.GOOGLE_APPLICATION_CREDENTIALS &&
-    !emulator
-  )
-    throw new Error(
-      "Must provide Service Account key to authenticate Firestore Database",
-    );
+  if (!keyFile && !process.env.SERVICE_ACCOUNT_KEY) return new Firestore();
   debug &&
     CLI_LOG(
       `Service Account Key: ${keyFile}\nDatabase Id: ${databaseId || "(default)"}`,
@@ -26,11 +17,6 @@ export async function authenticateFirestore({
     );
   //
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS) return new Firestore();
-
-  let projectId: string | undefined;
-  if (emulator)
-    // Use a dummy key file that only contains the project ID.
-    projectId = await readFile(resolve(keyFile), "utf8");
 
   let firestore;
   if (process.env.SERVICE_ACCOUNT_KEY) {
