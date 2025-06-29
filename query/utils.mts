@@ -5,8 +5,7 @@ export default function handleWhereClause(
   ref: CollectionReference | Query,
   where: Condition,
 ) {
-  if (!where || !where.length)
-    throw new Error("Must contain where clause if the --where flag is used");
+  if (!where || !where.length) return ref;
   const result = evalCondition(ref, where);
   if (!(result instanceof Query))
     throw new Error("Final result must be a Query Object");

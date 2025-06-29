@@ -19,6 +19,10 @@ export default async (collection: string, options: Options) => {
     process.exit();
   }
   const ref = getCollectionReference(db, collection);
-  handleWhereClause(ref, options.where);
-  return program;
+  const q = handleWhereClause(ref, options.where);
+  const docs = await q.get();
+  if (docs.empty) return;
+  docs.forEach((doc) => {
+    process.stdout.write(doc.ref.path + "\n");
+  });
 };
