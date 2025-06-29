@@ -13,7 +13,7 @@ try {
   program
     .name("firestore-cli")
     .description("CLI tool to query the google cloud firestore database")
-    .version("1.0.8.2");
+    .version("1.0.8-beta.2");
 
   program
     .command("set <path> [new-document-data]")
@@ -98,7 +98,7 @@ try {
     .action(query);
 
   program
-    .command("get <path>")
+    .command("get [path]")
     .description("Fetch documents from a given path")
     .option(
       "-k, --service-account-key <VALUE>",
