@@ -24,6 +24,11 @@ try {
       "-k, --service-account-key <VALUE>",
       `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY or the GOOGLE_APPLICATION_CREDENTIALS env variable is set.`,
     )
+    .option(
+      "--database-id <VALUE>",
+      "Specifies the database Id. If not specified `(default)` is used.",
+    )
+    .option("--project-id <VALUE>", "Set the project ID")
     .option("-b, --bulk", "Perform bulk set operations")
     .option(
       "-f --file <VALUE>",
@@ -52,6 +57,11 @@ try {
     .option(
       "-k, --service-account-key <VALUE>",
       `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY or the GOOGLE_APPLICATION_CREDENTIALS env variable is set.`,
+    )
+    .option("--project-id <VALUE>", "Set the project ID")
+    .option(
+      "--database-id <VALUE>",
+      "Specifies the database Id. If not specified `(default)` is used.",
     )
     .option(
       "-w, --where [VALUE...]",
@@ -104,6 +114,7 @@ try {
       "-k, --service-account-key <VALUE>",
       `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY or the GOOGLE_APPLICATION_CREDENTIALS env variable is set.`,
     )
+    .option("--project-id <VALUE>", "Set the project ID")
     .option(
       "--database-id <VALUE>",
       "Specifies the database Id. If not specified `(default)` is used.",
@@ -134,6 +145,7 @@ try {
       "-k, --service-account-key <VALUE>",
       `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY or the GOOGLE_APPLICATION_CREDENTIALS env variable is set.`,
     )
+    .option("--project-id <VALUE>", "Set the project ID")
     .option(
       "--database-id <VALUE>",
       "Specifies the database Id. If not specified `(default)` is used.",

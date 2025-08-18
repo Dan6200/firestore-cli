@@ -13,6 +13,7 @@ declare module "commander" {
     fileType?: "JSON" | "CSV" | "YAML";
     pager?: string | boolean;
     merge?: boolean;
+    projectId?: string;
   }
   type WhereClause = [string, WhereCondition, any];
   type OrClause = ["or" | "OR", ...WhereClause];
