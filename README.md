@@ -1,6 +1,6 @@
-### Firestore CLI (Still In Development) - README
+### Firestore CLI - README
 
-A lightweight command-line interface for interacting with Google Firestore, Firebase, and Google Cloud APIs. Streamline document management, queries, and administrative tasks directly from your terminal. **Note** This project is currently in its infancy! Expect things not to work or breaking changes. I am open to suggestions and feedback, thank you.
+A lightweight command-line interface for interacting with Google Firestore. Streamline document management, queries, and administrative tasks directly from your terminal. **Note** This project is currently in its infancy! Expect things not to work or breaking changes. I am open to suggestions and feedback, thank you.
 
 ---
 
