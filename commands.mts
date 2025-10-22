@@ -134,6 +134,7 @@ try {
     .option(
       "--pager-args [ARGS...]",
       "The arguments which should be passed to the pager",
+      ["-R", "-F", "-X"],
     )
     .option("--debug", "Set log level to DEBUG")
     .action(get);
