@@ -27,6 +27,16 @@ export default async (path: string, options: Options) => {
   }
 
   const { pager, failedToStartPager } = initializePager(options);
+
+  if (!failedToStartPager) {
+    // Handle EPIPE errors when the pager is closed before all data is written.
+    pager.stdin.on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code !== "EPIPE") {
+        throw err;
+      }
+    });
+  }
+
   const pagerClosed = failedToStartPager
     ? Promise.resolve()
     : new Promise<void>((resolve) => {
@@ -104,4 +114,3 @@ export default async (path: string, options: Options) => {
 
   await pagerClosed;
 };
-
