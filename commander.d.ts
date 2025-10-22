@@ -14,6 +14,8 @@ declare module "commander" {
     pager?: string | boolean;
     merge?: boolean;
     projectId?: string;
+    stream?: boolean;
+    rateLimit?: number;
   }
   type WhereClause = [string, WhereCondition, any];
   type OrClause = ["or" | "OR", ...WhereClause];
