@@ -53,7 +53,15 @@ export default async (path: string, data: string, options: Options) => {
         throw new Error(
           "Invalid data format: The data provided with the --bulk flag must be in array format for JSON/YAML or tabular format for CSV. Ensure your input is properly structured.",
         );
-      const bulkWriter = db.bulkWriter();
+      const bulkWriterOptions: {
+        throttling?: { maxOpsPerSecond: number };
+      } = {};
+      if (options.rateLimit) {
+        bulkWriterOptions.throttling = {
+          maxOpsPerSecond: options.rateLimit,
+        };
+      }
+      const bulkWriter = db.bulkWriter(bulkWriterOptions);
       const ref = getFirestoreReference(db, path);
       if (ref instanceof DocumentReference)
         throw new Error(

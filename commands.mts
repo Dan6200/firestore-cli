@@ -48,6 +48,11 @@ try {
     )
     .option("--merge", "Option to overwrite or merge existing data if any")
     .option("--no-merge", "set --merge option to false.")
+    .option(
+      "--rate-limit <VALUE>",
+      "Sets the maximum number of operations per second for bulk writes.",
+      parseInt,
+    )
     .option("--debug", "Set log level to DEBUG")
     .action(set);
 
