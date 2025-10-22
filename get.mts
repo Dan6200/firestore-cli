@@ -2,13 +2,13 @@
 import { Chalk } from "chalk";
 import ora from "ora";
 import { Options } from "commander";
-import { printDocuments } from "./utils/print/documents.mjs";
 import { DocumentSnapshot, QuerySnapshot } from "@google-cloud/firestore";
 import { initializePager } from "./init-pager.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
 import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
 import { getFirestoreReference } from "./utils/get-firestore-reference.mjs";
 import { printJSON } from "./utils/print/json.mjs";
+import { formatDocument } from "./utils/print/format-document.mjs";
 const chalk = new Chalk({ level: 3 });
 
 export default async (path: string, options: Options) => {
@@ -38,9 +38,8 @@ export default async (path: string, options: Options) => {
     spinner = ora("Fetching documents from " + path + "\n").start();
     const ref = getFirestoreReference(db, path);
     snapshot = await ref.get();
-    if (failedToStartPager) spinner.succeed("Done!");
   } catch (error) {
-    pager.kill();
+    if (pager) pager.kill();
     spinner.fail("Failed to fetch document path.");
     if (error.message.includes("not found"))
       CLI_LOG(`Cannot find the resource at the given path ${path}`, "error");
@@ -48,31 +47,61 @@ export default async (path: string, options: Options) => {
     process.exitCode = 1;
     return;
   }
-  //
-  let stdOutput = null;
+
   try {
     if (options.json) {
-      stdOutput = printJSON(snapshot, options);
-      if (failedToStartPager) process.stdout.write(stdOutput);
-    } else
-      stdOutput = printDocuments(
-        snapshot,
-        chalk,
-        failedToStartPager,
-        options.whiteSpace,
-      );
-    if (!failedToStartPager) {
-      spinner.succeed("Done!");
-      pager.stdin.write(stdOutput);
+      const stdOutput = printJSON(snapshot, options);
+      const destination = failedToStartPager ? process.stdout : pager.stdin;
+      if (failedToStartPager) spinner.succeed("Done!");
+      else spinner.succeed("Done!\nPiping to pager.");
+      destination.write(stdOutput);
+    } else {
+      const destination = failedToStartPager ? process.stdout : pager.stdin;
+      if (failedToStartPager) spinner.succeed("Done!");
+      else spinner.succeed("Done!\nPiping to pager.");
+
+      if (snapshot instanceof DocumentSnapshot) {
+        if (snapshot.exists) {
+          destination.write(
+            formatDocument(snapshot, chalk, options.whiteSpace, {
+              isArrayElement: false,
+            }),
+          );
+        } else {
+          destination.write("[]");
+        }
+      } else if (snapshot instanceof QuerySnapshot) {
+        if (snapshot.empty) {
+          destination.write("[]");
+        } else {
+          const NEWLINE_AMOUNT = Math.floor(
+            Math.max(1, Math.log2(options.whiteSpace || 2)),
+          );
+          destination.write("[" + "\n".repeat(NEWLINE_AMOUNT));
+          let docCount = 0;
+          snapshot.forEach((doc) => {
+            docCount++;
+            const isLast = docCount === snapshot.size;
+            destination.write(
+              formatDocument(doc, chalk, options.whiteSpace, {
+                isLastInArray: isLast,
+                isArrayElement: true,
+              }),
+            );
+          });
+          destination.write("]");
+        }
+      }
     }
   } catch (e) {
-    spinner.fail("Failed to fetch documents!");
+    spinner.fail("Failed to process documents!");
     CLI_LOG(e, "error", pager);
     error = true;
   } finally {
     if (!failedToStartPager) pager.stdin.end();
     if (error) process.exitCode = 1;
   }
+
   await pagerClosed;
 };
 
