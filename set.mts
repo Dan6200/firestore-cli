@@ -53,7 +53,7 @@ export default async (path: string, data: string, options: Options) => {
         throw new Error(
           "Invalid data format: The data provided with the --bulk flag must be in array format for JSON/YAML or tabular format for CSV. Ensure your input is properly structured.",
         );
-      const batch = db.batch();
+      const bulkWriter = db.bulkWriter();
       const ref = getFirestoreReference(db, path);
       if (ref instanceof DocumentReference)
         throw new Error(
@@ -78,10 +78,10 @@ export default async (path: string, data: string, options: Options) => {
           docId = undefined;
         }
         const docRef = ref.doc(docId);
-        batch.set(docRef, docData, { merge: options.merge });
+        bulkWriter.set(docRef, docData, { merge: options.merge });
       });
       try {
-        await batch.commit();
+        await bulkWriter.close();
       } catch (e) {
         throw new Error("Failed to add new documents: " + e.message);
       }
