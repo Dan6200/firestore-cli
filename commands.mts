@@ -136,6 +136,7 @@ try {
       "The arguments which should be passed to the pager",
       ["-R", "-F", "-X"],
     )
+    .option("--stream", "Stream documents from Firestore one by one.")
     .option("--debug", "Set log level to DEBUG")
     .action(get);
 
@@ -162,33 +163,6 @@ try {
     )
     .option("--debug", "Set log level to DEBUG")
     .action(deleteDoc);
-
-  // program
-  //   .command("update <path> [data] [document-id...]")
-  //   .description("Update document(s) in a path")
-  //   .option(
-  //     "-k, --service-account-key <VALUE>",
-  //     `Filepath to the service account key file for authentication. Can be omitted if the SERVICE_ACCOUNT_KEY or the GOOGLE_APPLICATION_CREDENTIALS env variable is set.`,
-  //   )
-  //   .option(
-  //     "--database-id <VALUE>",
-  //     "Specifies the database Id. If not specified `(default)` is used.",
-  //   )
-  //   .option("-b, --bulk", "Perform bulk update operations")
-  //   .option(
-  //     "-f --file <VALUE>",
-  //     "Read input from a file.\nData is in the form of an object with the keys being the document IDs of the document(s) to be updated and the value being the new data.\nUnless the --file-type flag is set, the file is assumed to be in JSON format",
-  //   )
-  //   .option(
-  //     "--file-type <VALUE>",
-  //     "Specify the file type of the input file. To be used in conjunction with the --file flag",
-  //   )
-  //   .option(
-  //     "-o, --overwrite",
-  //     "Update the document by replace its existing data. A merge is done instead if this option is not set.",
-  //   )
-  //   .option("--debug", "Set log level to DEBUG")
-  //   .action(update);
 } catch (error) {
   CLI_LOG(error, "error");
 }
