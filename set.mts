@@ -20,7 +20,12 @@ export default async (path: string, data: string, options: Options) => {
   const spinner = ora("Adding document(s) to " + path + "\n").start();
   try {
     const db = await authenticateFirestore(options);
-    let parsedData: { id?: string; data: any }[] | null = null;
+    let parsedData:
+      | { id: string; data: any }
+      | { id: string; data: any }[]
+      | { [field: string]: any }
+      | { [field: string]: any }[]
+      | null = null;
     if (options.file) {
       const inputFile = options.file;
       if (!existsSync(inputFile)) {
@@ -54,9 +59,26 @@ export default async (path: string, data: string, options: Options) => {
         throw new Error(
           `Path must be to a collection for bulk operations: \`${path}\` has an odd number of segments, representing a document reference.`,
         );
-      parsedData.map(({ id, data }) => {
-        const docRef = ref.doc(id);
-        batch.set(docRef, data, { merge: options.merge });
+      parsedData.forEach((item: any) => {
+        let docId: string | undefined;
+        let docData: any;
+        const hasId = "id" in item;
+        const hasData = "data" in item;
+        if (hasId && hasData) {
+          docId = item.id;
+          docData = item.data;
+        } else if (hasId || hasData) {
+          throw new Error(
+            `Invalid item in bulk data array: When 'id' or 'data' are present, both fields are required. Offending item: ${JSON.stringify(
+              item,
+            )}`,
+          );
+        } else {
+          docData = item;
+          docId = undefined;
+        }
+        const docRef = ref.doc(docId);
+        batch.set(docRef, docData, { merge: options.merge });
       });
       try {
         await batch.commit();
@@ -66,16 +88,34 @@ export default async (path: string, data: string, options: Options) => {
     } else {
       if (Array.isArray(parsedData))
         throw new Error(
-          "Invalid data format: For add operations without the --bulk flag, the data must be a single object with a `data` field and optionally an `id` field.",
+          "Invalid data format: For add operations without the --bulk flag, the data must be a single object.",
         );
-      const { id, data } = parsedData;
-      if (id) path += `/${id}`; // if defined append to path to force a document reference
-      // error probably occurs here
+      let docId: string | undefined;
+      let docData: any;
+      const hasId = "id" in parsedData;
+      const hasData = "data" in parsedData;
+
+      if (hasId && hasData) {
+        docId = parsedData.id;
+        docData = parsedData.data;
+      } else if (hasId || hasData) {
+        throw new Error(
+          "Invalid data format: When 'id' or 'data' are present, both fields are required.",
+        );
+      } else {
+        docData = parsedData;
+      }
+
+      if (docId) {
+        path += `/${docId}`;
+      }
       options.debug && CLI_LOG("Document path: " + path, "debug");
       const ref = getFirestoreReference(db, path);
       if (ref instanceof CollectionReference) {
-        await ref.doc(id).set(data);
-      } else await ref.set(data);
+        await ref.add(docData);
+      } else {
+        await ref.set(docData, { merge: options.merge });
+      }
     }
     spinner.succeed("Done!");
   } catch (e) {
@@ -84,3 +124,4 @@ export default async (path: string, data: string, options: Options) => {
     process.exitCode = 1;
   }
 };
+
