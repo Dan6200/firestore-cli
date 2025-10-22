@@ -23,10 +23,15 @@ export default async (path: string, options: Options) => {
     spinner.fail("Failed to authenticate to Firestore DB.");
     CLI_LOG(error.toString(), "error");
     process.exitCode = 1;
-    process.exit();
+    return;
   }
 
   const { pager, failedToStartPager } = initializePager(options);
+  const pagerClosed = failedToStartPager
+    ? Promise.resolve()
+    : new Promise<void>((resolve) => {
+        pager.on("close", () => resolve());
+      });
 
   let snapshot: null | QuerySnapshot | DocumentSnapshot = null;
   try {
@@ -34,11 +39,6 @@ export default async (path: string, options: Options) => {
     const ref = getFirestoreReference(db, path);
     snapshot = await ref.get();
     if (failedToStartPager) spinner.succeed("Done!");
-    // TODO: Move this to its own subcommand...
-    // if (options.where?.length > 0) {
-    //   let ref: CollectionReference | Query = db.collection(path);
-    //   snapshot = await handleWhereClause(ref, options.where).get();
-    // } else {}
   } catch (error) {
     pager.kill();
     spinner.fail("Failed to fetch document path.");
@@ -46,7 +46,7 @@ export default async (path: string, options: Options) => {
       CLI_LOG(`Cannot find the resource at the given path ${path}`, "error");
     else CLI_LOG(error.toString(), "error");
     process.exitCode = 1;
-    process.exit();
+    return;
   }
   //
   let stdOutput = null;
@@ -73,4 +73,6 @@ export default async (path: string, options: Options) => {
     if (!failedToStartPager) pager.stdin.end();
     if (error) process.exitCode = 1;
   }
+  await pagerClosed;
 };
+
