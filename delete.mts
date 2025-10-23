@@ -3,43 +3,83 @@ import ora from "ora";
 import { Options } from "commander";
 import { CLI_LOG } from "./utils/logging.mjs";
 import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
-import { getFirestoreReference } from "./utils/get-firestore-reference.mjs";
-import {
-  CollectionReference,
-  DocumentReference,
-} from "@google-cloud/firestore";
+import { readFile } from "fs/promises";
+import { resolve } from "path";
+import { existsSync } from "fs";
+
+// Helper function to read from stdin
+function readStdin(): Promise<string> {
+  return new Promise((resolve) => {
+    let data = "";
+    process.stdin.on("data", (chunk) => (data += chunk));
+    process.stdin.on("end", () => resolve(data));
+  });
+}
 
 export default async (path: string, options: Options) => {
-  const spinner = ora("Deleting document(s) in " + path + "\n").start();
+  const spinner = ora("Deleting document(s)...
+").start();
   try {
     const db = await authenticateFirestore(options);
-    if (options.bulk) {
-      const batch = db.batch();
-      const ref = getFirestoreReference(db, path);
-      if (ref instanceof DocumentReference)
-        throw new Error(
-          `Path must be to a collection for bulk operations: \`${path}\` has an odd number of segments, representing a document reference.`,
-        );
-      const collectionDocumentsSnapshot = await ref.get();
-      collectionDocumentsSnapshot.docs.map((docSnapshot) => {
-        batch.delete(docSnapshot.ref);
-      });
-      try {
-        await batch.commit();
-      } catch (e) {
-        throw new Error("Failed to add new documents: " + e);
+    let pathsToDelete: string[] = [];
+
+    // 1. Check stdin
+    if (!process.stdin.isTTY) {
+      spinner.text = "Reading document paths from stdin...";
+      const stdinData = await readStdin();
+      if (stdinData) {
+        pathsToDelete = stdinData.split("\n").filter((p) => p.trim());
       }
-    } else {
-      const ref = getFirestoreReference(db, path);
-      if (ref instanceof CollectionReference)
-        throw new Error(
-          `Path must be to a document for singular operations: \`${path}\` has an even number of segments, representing a collection reference. Use the --bulk flag for collection operations.`,
-        );
-      await db.doc(path).delete();
     }
-    spinner.succeed("Done!");
+    // 2. Check --file
+    else if (options.file) {
+      spinner.text = `Reading document paths from file: ${options.file}...`;
+      const inputFile = options.file;
+      if (!existsSync(inputFile)) {
+        throw new Error(`Invalid file path for the --file option: ${inputFile}`);
+      }
+      const fileContent = await readFile(resolve(inputFile), "utf8");
+      if (fileContent) {
+        pathsToDelete = fileContent.split("\n").filter((p) => p.trim());
+      }
+    }
+    // 3. Fallback to path argument
+    else {
+      if (path) {
+        pathsToDelete.push(path);
+      } else {
+        throw new Error(
+          "A document path or file is required when not reading from stdin.",
+        );
+      }
+    }
+
+    if (pathsToDelete.length === 0) {
+      spinner.succeed("No documents to delete.");
+      return;
+    }
+
+    spinner.text = `Deleting ${pathsToDelete.length} document(s)...`;
+
+    const bulkWriterOptions: { 
+      throttling?: { maxOpsPerSecond: number };
+    } = {};
+    if (options.rateLimit) {
+      bulkWriterOptions.throttling = {
+        maxOpsPerSecond: options.rateLimit,
+      };
+    }
+    const bulkWriter = db.bulkWriter(bulkWriterOptions);
+
+    for (const docPath of pathsToDelete) {
+      bulkWriter.delete(db.doc(docPath));
+    }
+
+    await bulkWriter.close();
+
+    spinner.succeed(`Successfully deleted ${pathsToDelete.length} document(s).`);
   } catch (e) {
-    spinner.fail("Failed to fetch documents!");
+    spinner.fail("Failed to delete document(s)!");
     CLI_LOG(e.message, "error");
     process.exitCode = 1;
   }
