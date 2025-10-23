@@ -62,32 +62,48 @@ export default async (path: string, data: string, options: Options) => {
         };
       }
       const bulkWriter = db.bulkWriter(bulkWriterOptions);
-      const ref = getFirestoreReference(db, path);
-      if (ref instanceof DocumentReference)
-        throw new Error(
-          `Path must be to a collection for bulk operations: \`${path}\` has an odd number of segments, representing a document reference.`,
-        );
-      parsedData.forEach((item: any) => {
-        let docId: string | undefined;
-        let docData: any;
-        const hasId = "id" in item;
-        const hasData = "data" in item;
-        if (hasId && hasData) {
-          docId = item.id;
-          docData = item.data;
-        } else if (hasId || hasData) {
+      if (options.fullPaths) {
+        // --- Full Paths Logic ---
+        parsedData.forEach((item: any) => {
+          if (typeof item.path !== "string" || typeof item.data !== "object") {
+            throw new Error(
+              `In --full-paths mode, each object in the array must have a 'path' (string) and a 'data' (object) property. Offending item: ${JSON.stringify(
+                item,
+              )}`,
+            );
+          }
+          const docRef = db.doc(item.path);
+          bulkWriter.set(docRef, item.data, { merge: options.merge });
+        });
+      } else {
+        // --- Existing Relative Path Logic ---
+        const ref = getFirestoreReference(db, path);
+        if (ref instanceof DocumentReference)
           throw new Error(
-            `Invalid item in bulk data array: When 'id' or 'data' are present, both fields are required. Offending item: ${JSON.stringify(
-              item,
-            )}`,
+            `Path must be to a collection for bulk operations without --full-paths: \`${path}\` has an odd number of segments, representing a document reference.`,
           );
-        } else {
-          docData = item;
-          docId = undefined;
-        }
-        const docRef = ref.doc(docId);
-        bulkWriter.set(docRef, docData, { merge: options.merge });
-      });
+        parsedData.forEach((item: any) => {
+          let docId: string | undefined;
+          let docData: any;
+          const hasId = "id" in item;
+          const hasData = "data" in item;
+          if (hasId && hasData) {
+            docId = item.id;
+            docData = item.data;
+          } else if (hasId || hasData) {
+            throw new Error(
+              `Invalid item in bulk data array: When 'id' or 'data' are present, both fields are required. Offending item: ${JSON.stringify(
+                item,
+              )}`,
+            );
+          } else {
+            docData = item;
+            docId = undefined;
+          }
+          const docRef = ref.doc(docId);
+          bulkWriter.set(docRef, docData, { merge: options.merge });
+        });
+      }
       try {
         await bulkWriter.close();
       } catch (e) {
