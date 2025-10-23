@@ -2,11 +2,14 @@ import { DocumentSnapshot, QuerySnapshot } from "@google-cloud/firestore";
 import { Options } from "commander";
 
 export function printJSON(
-  snapshot: DocumentSnapshot | QuerySnapshot,
+  snapshot: DocumentSnapshot | QuerySnapshot | DocumentSnapshot[],
   options: Options,
 ) {
   const snapArray: any[] = [];
-  if (snapshot instanceof QuerySnapshot) {
+  if (
+    snapshot instanceof QuerySnapshot ||
+    (Array.isArray(snapshot) && snapshot instanceof DocumentSnapshot)
+  ) {
     snapshot.forEach((doc) => snapArray.push({ id: doc.id, data: doc.data() }));
     return JSON.stringify(snapArray, null, options.whiteSpace ?? 2);
   }
