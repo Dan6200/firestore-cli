@@ -17,8 +17,7 @@ function readStdin(): Promise<string> {
 }
 
 export default async (path: string, options: Options) => {
-  const spinner = ora("Deleting document(s)...
-").start();
+  const spinner = ora("Deleting document(s)...").start();
   try {
     const db = await authenticateFirestore(options);
     let pathsToDelete: string[] = [];
@@ -36,7 +35,9 @@ export default async (path: string, options: Options) => {
       spinner.text = `Reading document paths from file: ${options.file}...`;
       const inputFile = options.file;
       if (!existsSync(inputFile)) {
-        throw new Error(`Invalid file path for the --file option: ${inputFile}`);
+        throw new Error(
+          `Invalid file path for the --file option: ${inputFile}`,
+        );
       }
       const fileContent = await readFile(resolve(inputFile), "utf8");
       if (fileContent) {
@@ -61,7 +62,7 @@ export default async (path: string, options: Options) => {
 
     spinner.text = `Deleting ${pathsToDelete.length} document(s)...`;
 
-    const bulkWriterOptions: { 
+    const bulkWriterOptions: {
       throttling?: { maxOpsPerSecond: number };
     } = {};
     if (options.rateLimit) {
@@ -77,7 +78,9 @@ export default async (path: string, options: Options) => {
 
     await bulkWriter.close();
 
-    spinner.succeed(`Successfully deleted ${pathsToDelete.length} document(s).`);
+    spinner.succeed(
+      `Successfully deleted ${pathsToDelete.length} document(s).`,
+    );
   } catch (e) {
     spinner.fail("Failed to delete document(s)!");
     CLI_LOG(e.message, "error");
