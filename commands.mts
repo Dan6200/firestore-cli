@@ -38,14 +38,6 @@ try {
       "--file-type <VALUE>",
       "Specify the file type of the input file. To be used in conjunction with the --file flag",
     )
-    .option(
-      "--custom-id <VALUE>",
-      "Allows the customization of the document id for the addition of a single document.",
-    )
-    .option(
-      "--custom-ids [VALUE...]",
-      "Allows the customization of the document id for bulk addition of documents. Must be used in conjunction with the --bulk flag or an error occurs",
-    )
     .option("--merge", "Option to overwrite or merge existing data if any")
     .option("--no-merge", "set --merge option to false.")
     .option(
@@ -53,6 +45,7 @@ try {
       "Sets the maximum number of operations per second for bulk writes.",
       parseInt,
     )
+    .option("--full-paths", "Enable full-path mode for bulk set operations from a file.")
     .option("--debug", "Set log level to DEBUG")
     .action(set);
 
@@ -160,11 +153,16 @@ try {
     .option("-b, --bulk", "Perform bulk add operations")
     .option(
       "-f --file <VALUE>",
-      "Read documentIds from a file. Unless the --file-type flag is set, the file is assumed to be in JSON format",
+      "Read input from a file. Unless the --file-type flag is set, the file is assumed to be in JSON format",
     )
     .option(
       "--file-type <VALUE>",
       "Specify the file type of the input file. To be used in conjunction with the --file flag",
+    )
+    .option(
+      "--rate-limit <VALUE>",
+      "Sets the maximum number of operations per second for bulk deletes.",
+      parseInt,
     )
     .option("--debug", "Set log level to DEBUG")
     .action(deleteDoc);
