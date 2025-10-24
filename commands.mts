@@ -45,6 +45,7 @@ try {
       "Sets the maximum number of operations per second for bulk writes.",
       parseInt,
     )
+    .option("--jsonl", "Enable streaming for bulk set operations with JSONL files.")
     .option("--debug", "Set log level to DEBUG")
     .action(set);
 

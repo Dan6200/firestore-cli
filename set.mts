@@ -1,7 +1,8 @@
 //cspell:disable
-import ora from "ora";
+import ora, { Ora } from "ora";
 import { Options } from "commander";
 import { createReadStream, existsSync } from "fs";
+import { readFile } from "fs/promises";
 import { resolve } from "path";
 import { createInterface } from "readline";
 import { CLI_LOG } from "./utils/logging.mjs";
@@ -12,12 +13,12 @@ import {
 } from "@google-cloud/firestore";
 import { getFirestoreReference } from "./utils/get-firestore-reference.mjs";
 
-// --- Helper for streaming bulk writes from a file or stdin ---
+// --- Helper for streaming JSONL bulk writes ---
 async function streamBulkSet(
   inputStream: NodeJS.ReadableStream,
   db: FirebaseFirestore.Firestore,
   options: Options,
-  path: string, // Base path from CLI
+  path: string,
 ) {
   const bulkWriter = db.bulkWriter({
     throttling: options.rateLimit
@@ -25,71 +26,97 @@ async function streamBulkSet(
       : false,
   });
 
-  const rl = createInterface({
-    input: inputStream,
-    crlfDelay: Infinity,
-  });
-
+  const rl = createInterface({ input: inputStream, crlfDelay: Infinity });
   let lineCount = 0;
-  const spinner = ora("Processing stream...").start();
+  const spinner = ora("Processing streamed data...").start();
 
   rl.on("line", (line) => {
     if (line.trim() === "") return;
     lineCount++;
     spinner.text = `Processed ${lineCount} lines...`;
-
     try {
       const item = JSON.parse(line);
-      let docRef: DocumentReference;
-      let docData: any;
-
-      if (typeof item.data === "object" && item.data !== null) {
-        docData = item.data;
-      } else {
-        const { id, path, data, ...rest } = item;
-        docData = rest;
-      }
-
-      if (typeof item.path === "string") {
-        const finalPath = path ? `${path}/${item.path}` : item.path;
-        docRef = db.doc(finalPath);
-      } else if (typeof item.id === "string") {
-        if (!path) {
-          throw new Error(
-            "A base collection path is required when using 'id' fields.",
-          );
-        }
-        docRef = db.collection(path).doc(item.id);
-      } else {
-        if (!path) {
-          throw new Error(
-            "A base collection path is required for items with no 'path' or 'id' field.",
-          );
-        }
-        docRef = db.collection(path).doc();
-      }
-
+      const { docRef, docData } = getDocRefAndData(item, path, db);
       bulkWriter.set(docRef, docData, { merge: options.merge });
     } catch (e) {
-      rl.close(); // Stop reading on error
-      bulkWriter.close(); // Attempt to close writer
+      rl.close();
+      bulkWriter.close();
       spinner.fail(`Error on line ${lineCount}: ${e.message}`);
       process.exitCode = 1;
     }
   });
 
   await new Promise<void>((resolve, reject) => {
-    rl.on("close", () => {
-      spinner.text = "File stream closed. Finalizing writes...";
-      resolve();
-    });
+    rl.on("close", resolve);
     rl.on("error", reject);
   });
 
-  if (process.exitCode === 1) return; // Don't proceed if line parsing failed
+  if (process.exitCode === 1) return; // Stop if line parsing failed
 
+  spinner.text = "Finalizing writes...";
   await bulkWriter.close();
   spinner.succeed(`Successfully processed ${lineCount} documents.`);
+}
+
+// --- Helper for standard JSON array bulk writes ---
+async function fullBulkSet(
+  parsedData: any[],
+  db: FirebaseFirestore.Firestore,
+  options: Options,
+  path: string,
+) {
+  const spinner = ora(`Processing ${parsedData.length} documents...`).start();
+  const bulkWriter = db.bulkWriter({
+    throttling: options.rateLimit
+      ? { maxOpsPerSecond: options.rateLimit }
+      : false,
+  });
+
+  parsedData.forEach((item: any) => {
+    const { docRef, docData } = getDocRefAndData(item, path, db);
+    bulkWriter.set(docRef, docData, { merge: options.merge });
+  });
+
+  await bulkWriter.close();
+  spinner.succeed(`Successfully processed ${parsedData.length} documents.`);
+}
+
+// --- Shared helper for "Smart Path" logic ---
+function getDocRefAndData(
+  item: any,
+  path: string,
+  db: FirebaseFirestore.Firestore,
+): { docRef: DocumentReference; docData: any } {
+  let docRef: DocumentReference;
+  let docData: any;
+
+  if (typeof item.data === "object" && item.data !== null) {
+    docData = item.data;
+  } else {
+    const { id, path, data, ...rest } = item;
+    docData = rest;
+  }
+
+  if (typeof item.path === "string") {
+    const finalPath = path ? `${path}/${item.path}` : item.path;
+    docRef = db.doc(finalPath);
+  } else if (typeof item.id === "string") {
+    if (!path) throw new Error("Base path is required for items with 'id'.");
+    docRef = db.collection(path).doc(item.id);
+  } else {
+    if (!path) throw new Error("Base path is required for auto-generating IDs.");
+    docRef = db.collection(path).doc();
+  }
+  return { docRef, docData };
+}
+
+// --- Helper to read from stdin ---
+function readStdin(): Promise<string> {
+  return new Promise((resolve) => {
+    let data = "";
+    process.stdin.on("data", (chunk) => (data += chunk));
+    process.stdin.on("end", () => resolve(data));
+  });
 }
 
 // --- Main Command ---
@@ -99,68 +126,53 @@ export default async (path: string, data: string, options: Options) => {
     const db = await authenticateFirestore(options);
     spinner.succeed("Authentication successful.");
 
-    // --- Input Source Determination ---
+    // --- Bulk Operations ---
+    if (options.bulk) {
+      if (options.jsonl) {
+        let inputStream: NodeJS.ReadableStream;
+        spinner.text = "Processing as JSONL stream...";
+        if (options.file) {
+          const inputFile = options.file;
+          if (!existsSync(inputFile)) throw new Error(`File not found: ${inputFile}`);
+          inputStream = createReadStream(resolve(inputFile));
+        } else if (!process.stdin.isTTY) {
+          inputStream = process.stdin;
+        } else {
+          throw new Error("For --jsonl, data must be from --file or stdin.");
+        }
+        await streamBulkSet(inputStream, db, options, path);
+      } else {
+        let parsedData: any;
+        spinner.text = "Reading data...";
+        if (options.file) {
+          const inputFile = options.file;
+          if (!existsSync(inputFile)) throw new Error(`File not found: ${inputFile}`);
+          parsedData = JSON.parse(await readFile(resolve(inputFile), "utf8"));
+        } else if (!process.stdin.isTTY) {
+          const stdinData = await readStdin();
+          parsedData = JSON.parse(stdinData);
+        } else {
+          throw new Error("For bulk ops, data must be from --file or stdin.");
+        }
 
-    // 1. Bulk from File (JSONL)
-    if (options.bulk && options.file) {
-      const inputFile = options.file;
-      if (!existsSync(inputFile)) {
-        throw new Error(`Invalid file path for --file option: ${inputFile}`);
+        if (!Array.isArray(parsedData)) {
+          throw new Error("Data for bulk operation must be a JSON array.");
+        }
+        await fullBulkSet(parsedData, db, options, path);
       }
-      const fileStream = createReadStream(resolve(inputFile));
-      await streamBulkSet(fileStream, db, options, path);
       return;
     }
 
-    // 2. Bulk from stdin (JSONL)
-    if (options.bulk && !process.stdin.isTTY) {
-      await streamBulkSet(process.stdin, db, options, path);
-      return;
-    }
-
-    // 3. Single document from argument
+    // --- Single Document from argument ---
     if (data) {
       spinner.text = "Processing single document...";
       const parsedData = JSON.parse(data);
-
       if (Array.isArray(parsedData)) {
-        throw new Error(
-          "Invalid data format: For a single set, data must be a single object, not an array.",
-        );
+        throw new Error("Data for a single set must be a single object.");
       }
 
-      let docId: string | undefined;
-      let docData: any;
-      const hasId = "id" in parsedData;
-      const hasData = "data" in parsedData;
-
-      if (hasId && hasData) {
-        docId = parsedData.id;
-        docData = parsedData.data;
-      } else if (hasId || hasData) {
-        throw new Error(
-          "Invalid data format: When 'id' or 'data' are present, both fields are required.",
-        );
-      } else {
-        docData = parsedData;
-      }
-
-      if (docId) {
-        path += `/${docId}`;
-      }
-
-      if (!path) {
-        throw new Error(
-          "A document path is required for a single set operation.",
-        );
-      }
-
-      const ref = getFirestoreReference(db, path);
-      if (ref instanceof CollectionReference) {
-        await ref.add(docData);
-      } else {
-        await ref.set(docData, { merge: options.merge });
-      }
+      const { docRef, docData } = getDocRefAndData(parsedData, path, db);
+      await docRef.set(docData, { merge: options.merge });
       spinner.succeed("Done!");
       return;
     }
