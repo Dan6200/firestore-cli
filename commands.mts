@@ -102,6 +102,17 @@ try {
       "-l, --limit <VALUE>",
       "Limit results to `VALUE` count documents. To be implemented soon.",
     )
+    .option("-np, --no-pager", "The option to print results without a pager.")
+    .option(
+      "--pager <VALUE>",
+      "Customizes which pager should be used to read output. The default is 'less'",
+      "less",
+    )
+    .option(
+      "--pager-args [ARGS...]",
+      "The arguments which should be passed to the pager",
+      ["-R", "-F", "-X"],
+    )
     .action(query);
 
   program
