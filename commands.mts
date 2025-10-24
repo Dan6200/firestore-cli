@@ -16,7 +16,7 @@ try {
     .version("1.0.8-beta.3");
 
   program
-    .command("set <path> [new-document-data]")
+    .command("set [path] [new-document-data]")
     .description(
       "Set document to a path. Adds or updates documents. In the case of an update can overwrite or merge based on the --merge option.",
     )
@@ -45,7 +45,6 @@ try {
       "Sets the maximum number of operations per second for bulk writes.",
       parseInt,
     )
-    .option("--full-paths", "Enable full-path mode for bulk set operations from a file.")
     .option("--debug", "Set log level to DEBUG")
     .action(set);
 
@@ -116,6 +115,10 @@ try {
     .option(
       "--database-id <VALUE>",
       "Specifies the database Id. If not specified `(default)` is used.",
+    )
+    .option(
+      "-f, --file <VALUE>",
+      "Read a newline-separated list of document paths from a file.",
     )
     .option(
       "-ws, --white-space <VALUE>",
