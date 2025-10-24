@@ -1,5 +1,5 @@
 //cspell:disable
-import { Chalk } from "chalk";
+import { Chalk, ChalkInstance } from "chalk";
 import ora, { Ora } from "ora";
 import { Options } from "commander";
 import {
@@ -15,7 +15,45 @@ import { getFirestoreReference } from "./utils/get-firestore-reference.mjs";
 import { printJSON } from "./utils/print/json.mjs";
 import { formatDocument } from "./utils/print/format-document.mjs";
 import { ChildProcess } from "child_process";
+import { readFile } from "fs/promises";
+import { resolve } from "path";
+import { existsSync } from "fs";
+
 const chalk = new Chalk({ level: 3 });
+
+// Helper to read from stdin
+function readStdin(): Promise<string> {
+  return new Promise((resolve) => {
+    let data = "";
+    process.stdin.on("data", (chunk) => (data += chunk));
+    process.stdin.on("end", () => resolve(data));
+  });
+}
+
+// Helper to print an array of documents in a streaming fashion
+function printDocsInBulk(
+  docs: DocumentSnapshot[],
+  options: Options,
+  chalk: ChalkInstance,
+  destination: NodeJS.WritableStream,
+) {
+  const NEWLINE_AMOUNT = Math.floor(
+    Math.max(1, Math.log2(options.whiteSpace || 2)),
+  );
+  destination.write("[" + "\n".repeat(NEWLINE_AMOUNT));
+  let docCount = 0;
+  for (const doc of docs) {
+    docCount++;
+    const isLast = docCount === docs.length;
+    destination.write(
+      formatDocument(doc, chalk, options.whiteSpace, {
+        isLastInArray: isLast,
+        isArrayElement: true,
+      }),
+    );
+  }
+  destination.write("]");
+}
 
 async function handleSnapshotGet(
   ref: DocumentReference | Query,
@@ -27,17 +65,13 @@ async function handleSnapshotGet(
   let error = false;
   try {
     const snapshot = await ref.get();
-    if (options.json) {
-      const stdOutput = printJSON(snapshot, options);
-      const destination = failedToStartPager ? process.stdout : pager.stdin;
-      if (failedToStartPager) spinner.succeed("Done!");
-      else spinner.succeed("Done! Piping to pager.");
-      destination.write(stdOutput);
-    } else {
-      const destination = failedToStartPager ? process.stdout : pager.stdin;
-      if (failedToStartPager) spinner.succeed("Done!");
-      else spinner.succeed("Done! Piping to pager.");
+    const destination = failedToStartPager ? process.stdout : pager.stdin;
+    if (failedToStartPager) spinner.succeed("Done!");
+    else spinner.succeed("Done! Piping to pager.");
 
+    if (options.json) {
+      destination.write(printJSON(snapshot, options));
+    } else {
       if (snapshot instanceof DocumentSnapshot) {
         if (snapshot.exists) {
           destination.write(
@@ -52,22 +86,7 @@ async function handleSnapshotGet(
         if (snapshot.empty) {
           destination.write("[]");
         } else {
-          const NEWLINE_AMOUNT = Math.floor(
-            Math.max(1, Math.log2(options.whiteSpace || 2)),
-          );
-          destination.write("[" + "\n".repeat(NEWLINE_AMOUNT));
-          let docCount = 0;
-          for (const doc of snapshot.docs) {
-            docCount++;
-            const isLast = docCount === snapshot.size;
-            destination.write(
-              formatDocument(doc, chalk, options.whiteSpace, {
-                isLastInArray: isLast,
-                isArrayElement: true,
-              }),
-            );
-          }
-          destination.write("]");
+          printDocsInBulk(snapshot.docs, options, chalk, destination);
         }
       }
     }
@@ -105,7 +124,7 @@ async function handleStreamedGet(
     }
     destination.write(
       formatDocument(doc, chalk, options.whiteSpace, {
-        isLastInArray: false, // Not easily known in a stream
+        isLastInArray: false, // Not known in a stream
         isArrayElement: true,
       }),
     );
@@ -125,6 +144,44 @@ async function handleStreamedGet(
     process.exitCode = 1;
     if (!failedToStartPager) pager.stdin.end();
   });
+}
+
+async function handlePipedOrFileGet(
+  paths: string[],
+  db: FirebaseFirestore.Firestore,
+  options: Options,
+  spinner: Ora,
+  pager: ChildProcess,
+  failedToStartPager: boolean,
+) {
+  let error = false;
+  try {
+    spinner.text = `Fetching ${paths.length} document(s)...`;
+    const docRefs = paths.map((p) => db.doc(p));
+    const docSnapshots = await db.getAll(...docRefs);
+    const existingDocs = docSnapshots.filter((d) => d.exists);
+
+    const destination = failedToStartPager ? process.stdout : pager.stdin;
+    if (failedToStartPager) spinner.succeed("Done!");
+    else spinner.succeed("Done! Piping to pager.");
+
+    if (options.json) {
+      destination.write(printJSON(existingDocs, options));
+    } else {
+      if (existingDocs.length === 0) {
+        destination.write("[]");
+      } else {
+        printDocsInBulk(existingDocs, options, chalk, destination);
+      }
+    }
+  } catch (e) {
+    spinner.fail("Failed to fetch documents!");
+    CLI_LOG(e, "error", pager);
+    error = true;
+  } finally {
+    if (!failedToStartPager) pager.stdin.end();
+    if (error) process.exitCode = 1;
+  }
 }
 
 export default async (path: string, options: Options) => {
@@ -150,13 +207,64 @@ export default async (path: string, options: Options) => {
           pager.on("close", () => resolve());
         });
 
-    const ref = getFirestoreReference(db, path);
-    spinner = ora("Fetching documents from " + path + "\n").start();
+    let pathsToGet: string[] = [];
+    let isPipedOrFile = false;
 
-    if (options.stream && !(ref instanceof DocumentReference)) {
-      await handleStreamedGet(ref, options, spinner, pager, failedToStartPager);
+    if (!process.stdin.isTTY) {
+      isPipedOrFile = true;
+      spinner.text = "Reading document paths from stdin...";
+      const stdinData = await readStdin();
+      if (stdinData) {
+        pathsToGet = stdinData.split("\n").filter((p) => p.trim());
+      }
+    } else if (options.file) {
+      isPipedOrFile = true;
+      spinner.text = `Reading document paths from file: ${options.file}...`;
+      const inputFile = options.file;
+      if (!existsSync(inputFile)) {
+        throw new Error(`Invalid file path for --file option: ${inputFile}`);
+      }
+      const fileContent = await readFile(resolve(inputFile), "utf8");
+      if (fileContent) {
+        pathsToGet = fileContent.split("\n").filter((p) => p.trim());
+      }
+    }
+
+    if (isPipedOrFile) {
+      await handlePipedOrFileGet(
+        pathsToGet,
+        db,
+        options,
+        spinner,
+        pager,
+        failedToStartPager,
+      );
     } else {
-      await handleSnapshotGet(ref, options, spinner, pager, failedToStartPager);
+      if (!path) {
+        throw new Error(
+          "A path is required when not reading from stdin or a file.",
+        );
+      }
+      const ref = getFirestoreReference(db, path);
+      spinner = ora("Fetching documents from " + path + "\n").start();
+
+      if (options.stream && !(ref instanceof DocumentReference)) {
+        await handleStreamedGet(
+          ref,
+          options,
+          spinner,
+          pager,
+          failedToStartPager,
+        );
+      } else {
+        await handleSnapshotGet(
+          ref,
+          options,
+          spinner,
+          pager,
+          failedToStartPager,
+        );
+      }
     }
 
     await pagerClosed;
