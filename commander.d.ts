@@ -16,6 +16,7 @@ declare module "commander" {
     projectId?: string;
     stream?: boolean;
     rateLimit?: number;
+    jsonl?: boolean;
   }
   type WhereClause = [string, WhereCondition, any];
   type OrClause = ["or" | "OR", ...WhereClause];
