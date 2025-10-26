@@ -6,33 +6,44 @@ A lightweight, powerful command-line interface for interacting with Google Fires
 
 ---
 
-## ✨ What's New in the Upcoming Version
+## ✨ What's New in Version 1.1.0
 
-This version introduces major features focused on performance, flexibility, and scriptability.
+This version introduces major features focused on performance, flexibility, and scriptability for large-scale data management.
 
-*   **Piping & `xargs`-like Behavior**: Pipe the output of `firestore-cli query` directly into `delete` to perform actions on a subset of documents.
-*   **High-Performance `BulkWriter`**: The `set` and `delete` commands now use Firestore's `BulkWriter` for efficient, high-throughput batch operations.
+*   **High-Performance Bulk Operations**: The `set` and `delete` commands now use Firestore's `BulkWriter` for efficient, high-throughput batch operations, replacing the previous batch implementation.
 *   **Rate Limiting**: A new `--rate-limit` option on `set` and `delete` commands gives you fine-grained control over write speeds to prevent overloading the server or emulator.
 *   **Firestore Native Streaming**: The `get` command has a new `--stream` flag to stream documents directly from Firestore, providing maximum memory efficiency for very large collections.
-*   **Flexible Data Input**: The `set` command is now more flexible, accepting simple JSON objects for documents with auto-generated IDs, or objects with explicit `id` and `data` keys.
-*   **Pager Stability**: The output pager (`less`) is now more stable and correctly handles colors and shutdown.
+*   **Flexible Data Input for `set`**: The `set` command is now more powerful and flexible, accepting multiple data shapes:
+    *   Simple JSON objects for documents with auto-generated IDs.
+    *   Objects with explicit `id` and `data` keys.
+    *   "Smart Path" logic that can use an `id` or `path` field from within the data object itself.
+*   **Streaming Bulk Writes**: The `set` command supports a `--jsonl` flag to stream bulk writes from a newline-delimited JSON file, drastically reducing memory usage for massive import jobs.
+*   **Pager Stability**: The output pager (`less`) is now more stable and correctly handles colors and shutdown, preventing crashes and improving the user experience.
 
 ---
 
 ## 🔑 Authentication Setup
 
-This tool requires a **Service Account Key** for API access. You can obtain one using the Google Cloud Console, Firebase Console, or the `gcloud` CLI.
+This tool supports two methods for authentication. Application Default Credentials (ADC) is the recommended approach for most development scenarios.
 
-_(The detailed authentication setup guide from the previous README version remains here, as it was excellent and requires no changes.)_
+### **Method 1: Application Default Credentials (Recommended)**
 
-### **Method 1: Google Cloud Console (Web UI)**
-...
-### **Method 2: Firebase Console**
-...
-### **Method 3: Google Cloud CLI (`gcloud`)**
-...
+This is the easiest way to authenticate, especially for local development. It uses the credentials you've configured with the `gcloud` CLI.
 
-### **Configure the CLI**
+1.  **Install the Google Cloud CLI**: If you haven't already, [install the `gcloud` CLI](https://cloud.google.com/sdk/docs/install).
+
+2.  **Login and Set Your Default Credentials**: Run the following command and follow the web-based login flow:
+    ```bash
+    gcloud auth application-default login
+    ```
+
+Once this is done, `firestore-cli` will automatically find and use these credentials. No further configuration is needed.
+
+### **Method 2: Service Account Key**
+
+This method uses a JSON key file for authentication. It's useful for CI/CD environments or if you need to authenticate as a specific service account.
+
+**Configure the CLI**
 
 Set your environment variable to point to the key:
 
@@ -40,6 +51,8 @@ Set your environment variable to point to the key:
 export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account.json"
 ```
 _(Add this to your shell profile (e.g., `.bashrc`, `.zshrc`) for persistence)_
+
+You can also provide the path to the key file directly to any command using the `-k, --service-account-key` option.
 
 ---
 
