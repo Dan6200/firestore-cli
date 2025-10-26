@@ -1,0 +1,10 @@
+91934008 |Allergy to nut (finding)|
+703911000 |Allergy to clam (finding)|
+390952000 |Allergy to dust (finding)|
+703925004 |Allergy to bean (finding)|
+294238000 |Allergy to gold (finding)|
+703930000 |Allergy to beef (finding)|
+788801007 |Allergy to beef due to alpha-gal syndrome (finding)|
+294418003 |Allergy to phenol (finding)|
+294764007 |Allergy to danazol (finding)|
+293696004 |Allergy to poldine (finding)|

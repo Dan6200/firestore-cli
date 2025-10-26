@@ -1,0 +1,10 @@
+126485001 |Urticaria (disorder)|Mild|
+41291007 |Angioedema (disorder)|Mild|
+39579001 |Anaphylaxis (disorder)|Severe|
+95516005 |Gastrointestinal irritation (finding)|Moderate|
+267036007 |Dyspnea (finding)|Moderate|
+422400008 |Vomiting (disorder)|Moderate|
+279333002 |Pruritic disorder (disorder)|Mild|
+409966000 |Acute diarrhea (disorder)|Moderate|
+3424008 |Tachycardia (finding)|Moderate|
+51599000 |Edema of larynx (disorder)|Severe|

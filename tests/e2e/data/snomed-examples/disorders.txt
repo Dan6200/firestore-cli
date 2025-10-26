@@ -1,0 +1,11 @@
+195967001 |Asthma (disorder)|
+22298006 |Myocardial infarction (disorder)|
+44054006 |Diabetes mellitus type 2 (disorder)|
+74390002 |Wolff-Parkinson-White pattern (disorder)|
+3723001 |Arthritis (disorder)|
+396331005 |Celiac disease (disorder)|
+233604007 |Pneumonia (disorder)|
+118599009 |Hodgkin's disease (disorder)|
+64859006 |Osteoporosis (disorder)|
+302231008 |Salmonella infection (disorder)|
+88092000 |Muscle atrophy (disorder)|

@@ -1,0 +1,10 @@
+13577000 |Nut (substance)|
+736030007 |Clam (substance)|
+33008008 |Dust (substance)|
+256354006 |Bean (substance)|
+2309006 |Gold (substance)|
+226916002 |Beef (substance)|
+226916002 |Beef (substance)|
+116613007 |Phenol (substance)|
+126124009 |Danazol (substance)|
+386985000 |Poldine (substance)|
