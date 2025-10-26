@@ -15,8 +15,6 @@ export function getFirestoreReference(
   if (!path) throw new Error("Path must be a non-empty string. Got :" + path);
   if (path.match(DOCUMENT_PATH_REGEX)) return db.doc(path);
   if (path.match(COLLECTION_PATH_REGEX)) return db.collection(path);
-  console.log("DOCUMENT_PATH_REGEX: ", DOCUMENT_PATH_REGEX);
-  console.log("COLLECTION_PATH_REGEX: ", COLLECTION_PATH_REGEX);
   throw new Error(
     "Malformed paths:\nDocument paths must haave even number segments separated by a slash `\`.\nCollection paths must have odd number segments and no slash if it is just the parent collection.\n No trailing slashes are allowed.",
   );
