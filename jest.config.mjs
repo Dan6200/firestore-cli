@@ -1,3 +1,8 @@
+import { pathsToModuleNameMapper } from "ts-jest";
+import { readFileSync } from "fs";
+
+const { compilerOptions } = JSON.parse(readFileSync("./tsconfig.json"));
+
 /** @type {import('ts-jest').JestConfigWithTsJest} **/
 
 // Add any custom config to be passed to Jest
@@ -23,6 +28,9 @@ const config = {
     "<rootDir>/tests/**/test.?(m)[tj]s?(x)", // Match a single test file like test.ts, test.js
   ],
   resolver: "jest-ts-webcompat-resolver",
+  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, {
+    prefix: "<rootDir>/",
+  }),
 };
 
 export default config;

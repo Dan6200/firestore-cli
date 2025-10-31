@@ -1,6 +1,11 @@
+import { jest } from "@jest/globals";
 import { execSync, spawn, ChildProcess } from "child_process";
 import { readFileSync } from "fs";
-import { resolve } from "path";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Define a path for the test data
 const DATA_DIR = resolve(__dirname, "data");

@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "ES6",
     "module": "NodeNext",
+    "isolatedModules": true,
     "outDir": "./built",
     "rootDir": "./",
     "esModuleInterop": true,
