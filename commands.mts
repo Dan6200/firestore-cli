@@ -7,13 +7,11 @@ import whereOptionParser from "./utils/where-option-parser.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
 const program = new Command();
 
-/* TODO: Big Deal!!! Replace all dynamic imports as older versions of node don't have those!!! */
-
 try {
   program
     .name("firestore-cli")
     .description("CLI tool to query the google cloud firestore database")
-    .version("1.1.0");
+    .version("1.1.3");
 
   program
     .command("set [path] [new-document-data]")
@@ -45,7 +43,10 @@ try {
       "Sets the maximum number of operations per second for bulk writes.",
       parseInt,
     )
-    .option("--jsonl", "Enable streaming for bulk set operations with JSONL files.")
+    .option(
+      "--jsonl",
+      "Enable streaming for bulk set operations with JSONL files.",
+    )
     .option("--debug", "Set log level to DEBUG")
     .action(set);
 
