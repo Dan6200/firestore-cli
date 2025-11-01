@@ -1,4 +1,4 @@
-import { printObj } from "../../../utils/print.mjs";
+import { printObj } from "../../../utils/print/object.mjs";
 import { chalk } from "../__mocks__/chalk.mjs";
 
 describe("`printObj` function", () => {

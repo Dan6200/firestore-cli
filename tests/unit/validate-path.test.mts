@@ -59,7 +59,7 @@ describe("getFirestoreReference", () => {
   describe("invalid paths", () => {
     it("should throw error for empty path", () => {
       expect(() => getFirestoreReference(mockDb as any, "")).toThrow(
-        "Malformed paths",
+        "Path must be a non-empty string. Got :",
       );
     });
 
