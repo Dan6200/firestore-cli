@@ -1,10 +1,11 @@
 {
   "name": "firestore-cli",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "",
   "main": "main.mjs",
   "scripts": {
-    "tests": "NODE_OPTIONS='--experimental-vm-modules' jest",
+    "tests": "FIRESTORE_EMULATOR_HOST=localhost:8080 NODE_OPTIONS='--experimental-vm-modules' jest",
+    "test:e2e": "firebase emulators:start --only firestore & sleep 5 && pnpm tests && firebase emulators:exec 'echo Shutting down'",
     "prebuild": "tsc -p tsconfig.json",
     "build": "node build.mjs",
     "dev": "tsx main.mts"
