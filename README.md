@@ -200,7 +200,7 @@ firestore-cli get big_collection --stream
 ## 🛠️ Development
 
 ```bash
-git clone https://github.com/darealestninja/firestore-cli.git
+git clone https://github.com/dan6200/firestore-cli.git
 cd firestore-cli
 pnpm install
 pnpm link # Test locally
