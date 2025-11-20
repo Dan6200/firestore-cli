@@ -10,3 +10,4 @@ testing_data
 .vscode
 /_jest.config.mjs
 /.infisical.json
+firestore-debug.log
