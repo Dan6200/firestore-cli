@@ -1,75 +1,45 @@
 import { jest } from "@jest/globals";
 import { execSync, spawn, ChildProcess } from "child_process";
 import { readFileSync } from "fs";
-import { fileURLToPath } from "url";
-import { dirname, resolve } from "path";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { resolve } from "path";
 
 // Define a path for the test data
-const DATA_DIR = resolve(__dirname, "data");
+const DATA_DIR = resolve("tests/e2e/data");
 
 describe("E2E Tests", () => {
   let emulatorProcess: ChildProcess;
 
   // Set a long timeout for the entire suite to allow for emulator start and data seeding
-  jest.setTimeout(60000); 
+  jest.setTimeout(120000); // 2 minutes
 
-  beforeAll(async () => {
-    // 1. Start the Firestore Emulator
-    console.log("Starting Firestore emulator...");
-    emulatorProcess = spawn("gcloud", [
-      "emulators",
-      "firestore",
-      "start",
-      "--host-port=localhost:8080",
-    ]);
-
-    // 2. Wait for the emulator to be ready
-    await new Promise<void>((resolvePromise) => {
-      emulatorProcess.stdout?.on("data", (data) => {
-        if (data.toString().includes("[firestore] Dev App Server is running")) {
-          console.log("Firestore emulator is running.");
-          resolvePromise();
-        }
-      });
-      emulatorProcess.stderr?.on("data", (data) => {
-        console.error(`Emulator stderr: ${data}`);
-      });
-    });
-
-    // 3. Seed the database with the 'lite' dataset
+  beforeAll(() => {
+    // The emulator is now started by the 'test:e2e' npm script.
+    // We just need to seed the database.
     console.log("Seeding database with lite dataset...");
     try {
       execSync(`bash ${DATA_DIR}/upload-lite.sh`);
       console.log("Database seeded successfully.");
     } catch (error) {
       console.error("Failed to seed database:", error.message);
-      // Kill the emulator if seeding fails
-      emulatorProcess.kill();
       throw error;
     }
   });
 
   afterAll(() => {
-    // 4. Shut down the emulator
-    console.log("Shutting down Firestore emulator...");
-    if (emulatorProcess) {
-      emulatorProcess.kill();
-    }
+    // The emulator is now stopped by the 'test:e2e' npm script.
+    console.log("Tests complete. Emulator will be shut down by the parent script.");
   });
 
   test("should get all documents from a collection", () => {
     console.log("Running test: should get all documents...");
     // Get the original data to compare against
     const originalData = JSON.parse(
-      readFileSync(`${DATA_DIR}/residents/data.json`, "utf-8")
+      readFileSync(`${DATA_DIR}/residents/data.json`, "utf-8"),
     );
 
     // Run the CLI command to get the documents as JSON
     const cliOutput = execSync(
-      "firestore-cli get providers/test-provider/residents --json"
+      "firestore-cli get providers/test-provider/residents --json",
     ).toString();
     const parsedOutput = JSON.parse(cliOutput);
 
@@ -89,7 +59,7 @@ describe("E2E Tests", () => {
 
     // Try to get the deleted document
     const cliOutput = execSync(
-      `firestore-cli get ${docPath} --json`
+      `firestore-cli get ${docPath} --json`,
     ).toString();
     const parsedOutput = JSON.parse(cliOutput);
 

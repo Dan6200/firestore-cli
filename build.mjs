@@ -19,7 +19,8 @@ async function buildAndAddShebang() {
       platform: "node",
       format: "esm",
       tsconfig: resolve(__dirname, "tsconfig.json"),
-      external: builtinModules,
+  external: [...builtinModules, "commander"],
+  define: { __dirname: '"__dirname"' },
       banner: { js: 'import { createRequire } from "module"; const require = createRequire(import.meta.url);' },
     });
 
