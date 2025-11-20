@@ -1,0 +1,14 @@
+node_modules
+*.bak.*
+.env
+*.vim
+.git
+service-account
+credentials
+testing_data
+/built/
+.vscode
+/_jest.config.mjs
+/.infisical.json
+firestore-debug.log
+tests/e2e/data/**/data.json
