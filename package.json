@@ -5,7 +5,9 @@
   "main": "main.mjs",
   "scripts": {
     "tests": "FIRESTORE_EMULATOR_HOST=localhost:8080 NODE_OPTIONS='--experimental-vm-modules' jest",
-    "test:e2e": "firebase emulators:start --only firestore & sleep 5 && pnpm tests && firebase emulators:exec 'echo Shutting down'",
+    "test:e2e-real": "NODE_OPTIONS='--experimental-vm-modules' jest tests/e2e",
+    "test:integrated": "firebase emulators:exec --only firestore \"pnpm tests\"",
+    "test:docker": "docker-compose up --build --abort-on-container-exit",
     "prebuild": "tsc -p tsconfig.json",
     "build": "node build.mjs",
     "dev": "tsx main.mts"
@@ -27,10 +29,12 @@
     "esbuild": "^0.25.4",
     "express": "^4.21.2",
     "fast-csv": "^5.0.2",
+    "json-to-zod": "^1.1.2",
     "open": "^10.1.0",
     "ora": "^8.1.1",
     "tabtab": "^3.0.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.26.0",
