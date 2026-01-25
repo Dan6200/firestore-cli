@@ -4,7 +4,7 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 
 // Define a path for the test data
-const DATA_DIR = resolve("tests/e2e/data");
+const DATA_DIR = resolve("tests/integrated/data");
 
 describe("E2E Tests", () => {
   let emulatorProcess: ChildProcess;

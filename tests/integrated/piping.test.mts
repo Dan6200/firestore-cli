@@ -11,7 +11,7 @@ const execAsync = promisify(exec);
 // Example: export FIRESTORE_EMULATOR_HOST="localhost:8080"
 const PROJECT_ID = "firestore-cli-test"; // Use a dedicated test project ID
 const CLI_COMMAND = `pnpm start --project-id ${PROJECT_ID}`;
-const TEST_COLLECTION = "e2e_test_users";
+const TEST_COLLECTION = "test_users";
 
 // --- Helper Functions ---
 const run = async (command: string) => {
@@ -58,7 +58,9 @@ describe("E2E: CLI Piping", () => {
     writeFileSync(tempFilePath, JSON.stringify(testDocs));
 
     // 3. Seed the database using the 'set' command
-    await run(`${CLI_COMMAND} set ${TEST_COLLECTION} --file ${tempFilePath} --bulk`);
+    await run(
+      `${CLI_COMMAND} set ${TEST_COLLECTION} --file ${tempFilePath} --bulk`,
+    );
   }, 30000); // Increase timeout for setup
 
   afterAll(async () => {
@@ -95,5 +97,5 @@ describe("E2E: CLI Piping", () => {
       `${CLI_COMMAND} get ${TEST_COLLECTION}/user_a --json`,
     );
     expect(JSON.parse(getAlice).name).toBe("Alice");
-  }, 30000); // Increase timeout for E2E test
+  }, 30000); // Increase timeout for test
 });
