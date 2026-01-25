@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  e2e-tests:
+    build: .
+    environment:
+      - FIRESTORE_EMULATOR_HOST=localhost:8080
+    ports:
+      - "8080:8080"
+    # Mount the project directory to allow for easier debugging/updates without rebuilding
+    volumes:
+      - .:/app
+      - /app/node_modules
