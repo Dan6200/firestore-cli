@@ -5,13 +5,20 @@ import query from "./query/main.mjs";
 import deleteDoc from "./delete.mjs";
 import whereOptionParser from "./utils/where-option-parser.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
+import { readFileSync } from "fs";
+
+const packageJson = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
+);
 const program = new Command();
+
+/* TODO: Big Deal!!! Replace all dynamic imports as older versions of node don't have those!!! */
 
 try {
   program
     .name("firestore-cli")
     .description("CLI tool to query the google cloud firestore database")
-    .version("1.1.6");
+    .version(packageJson.version);
 
   program
     .command("set [path] [new-document-data]")
@@ -46,6 +53,10 @@ try {
     .option(
       "--jsonl",
       "Enable streaming for bulk set operations with JSONL files.",
+    )
+    .option(
+      "--validate",
+      "Validate the input data against an inferred Zod schema.",
     )
     .option("--debug", "Set log level to DEBUG")
     .action(set);
@@ -179,6 +190,10 @@ try {
       "--rate-limit <VALUE>",
       "Sets the maximum number of operations per second for bulk deletes.",
       parseInt,
+    )
+    .option(
+      "-r, --recurse",
+      "Recursively delete documents and their subcollections. Only valid when deleting a specific document path.",
     )
     .option("--debug", "Set log level to DEBUG")
     .action(deleteDoc);
