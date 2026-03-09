@@ -4,12 +4,20 @@
 import { ObjectQueue } from "./object-queue";
 
 export class BlockingQueue<T> {
-  private items = new ObjectQueue<T>();
-  private resolvers = new ObjectQueue<{
+  private items: ObjectQueue<T>;
+  private resolvers: ObjectQueue<{
     resolve: (value: T) => void;
     reject: (reason: any) => void;
-  }>();
+  }>;
   private closed = false;
+
+  constructor(items = {}) {
+    this.items = new ObjectQueue<T>(items);
+    this.resolvers = new ObjectQueue<{
+      resolve: (value: T) => void;
+      reject: (reason: any) => void;
+    }>();
+  }
 
   enqueue(item: T) {
     if (this.closed) throw new Error("Queue is closed");
