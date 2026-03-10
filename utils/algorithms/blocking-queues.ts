@@ -11,7 +11,7 @@ export class BlockingQueue<T> {
   }>;
   private closed = false;
 
-  constructor(items = {}) {
+  constructor(items: T[] = []) {
     this.items = new ObjectQueue<T>(items);
     this.resolvers = new ObjectQueue<{
       resolve: (value: T) => void;
