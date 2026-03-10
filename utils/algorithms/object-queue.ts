@@ -3,8 +3,13 @@ export class ObjectQueue<T> {
   private head: number;
   private tail: number;
 
-  constructor(items = {}, head = 0, tail = 0) {
-    this.items = items;
+  constructor(items: T[] = [], head = 0, tail = 0) {
+    if (items.length > 0) {
+      for (const item of items) {
+        this.enqueue(item);
+      }
+    }
+    this.items = {};
     this.head = head;
     this.tail = tail;
   }
