@@ -89,7 +89,9 @@ export default async (path: string, options: Options) => {
     }
     const bulkWriter = db.bulkWriter(bulkWriterOptions);
 
-    await processQueue(docsToDelete, options.recurse, bulkWriter.delete);
+    await processQueue(docsToDelete, options.recurse, (ref) =>
+      bulkWriter.delete(ref),
+    );
 
     await bulkWriter.close();
 
