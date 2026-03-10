@@ -23,38 +23,49 @@ async function discoverPaths(
 
 export async function processQueue(
   queue: BlockingQueue<CollectionReference | DocumentReference>,
-  recursive: Boolean,
+  recursive: boolean,
   callback: (ref: DocumentReference) => Promise<WriteResult>,
 ) {
   const limit = pLimit(20);
-  const tasks = [];
-  while (queue.size) {
-    const refPromise = queue.dequeue();
-    const task = limit(
-      async (refPromise: Promise<CollectionReference | DocumentReference>) => {
-        const ref = await refPromise;
-        if (isCollection(ref)) {
-          if (recursive) {
-            await discoverPaths(queue, ref);
+  const tasks: Promise<void>[] = [];
+  let activeWork = 0;
+
+  try {
+    while (true) {
+      const ref = await queue.dequeue();
+      activeWork++;
+
+      const task = limit(async () => {
+        try {
+          if (isCollection(ref)) {
+            if (recursive) {
+              await discoverPaths(queue, ref);
+            } else {
+              throw new Error("Collection Path provided without --recurse");
+            }
           } else {
-            throw new Error(
-              "Collection Path provided. To recursively delete, you must provide the --recurse flag",
-            );
-          }
-        } else {
-          if (recursive) {
-            const subCollections = await ref.listCollections();
-            for (const sub of subCollections) {
-              await discoverPaths(queue, sub);
+            if (recursive) {
+              const subCollections = await ref.listCollections();
+              for (const sub of subCollections) {
+                queue.enqueue(sub);
+              }
             }
             await callback(ref);
           }
+        } finally {
+          activeWork--;
+
+          if (queue.size === 0 && activeWork === 0) {
+            queue.close();
+          }
         }
-      },
-      refPromise,
-    );
-    tasks.push(task);
+      });
+
+      tasks.push(task);
+    }
+  } catch (err: any) {
+    if (err.message !== "Queue closed: Consumer cancelled") throw err;
   }
-  queue.close();
+
   await Promise.all(tasks);
 }
