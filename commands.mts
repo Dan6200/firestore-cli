@@ -2,7 +2,7 @@ import { Command } from "commander";
 import set from "./set.mjs";
 import get from "./get.mjs";
 import query from "./query/main.mjs";
-import deleteDoc from "./delete.mjs";
+import deleteDoc from "./delete/main.mjs";
 import whereOptionParser from "./utils/where-option-parser.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
 import { readFileSync } from "fs";
