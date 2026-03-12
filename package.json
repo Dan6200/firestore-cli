@@ -5,7 +5,8 @@
   "main": "main.mjs",
   "scripts": {
     "tests": "FIRESTORE_EMULATOR_HOST=localhost:8080 NODE_OPTIONS='--experimental-vm-modules' jest",
-    "test:e2e-real": "NODE_OPTIONS='--experimental-vm-modules' jest tests/e2e",
+    "test:unit": "NODE_OPTIONS='--experimental-vm-modules' jest tests/unit",
+    "test:e2e": "NODE_OPTIONS='--experimental-vm-modules' jest tests/e2e",
     "test:integrated": "firebase emulators:exec --only firestore \"pnpm tests\"",
     "test:docker": "docker-compose up --build --abort-on-container-exit",
     "prebuild": "tsc -p tsconfig.json",
