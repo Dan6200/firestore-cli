@@ -19,9 +19,11 @@ async function buildAndAddShebang() {
       platform: "node",
       format: "esm",
       tsconfig: resolve(__dirname, "tsconfig.json"),
-  external: [...builtinModules, "commander"],
-  define: { __dirname: '"__dirname"' },
-      banner: { js: 'import { createRequire } from "module"; const require = createRequire(import.meta.url);' },
+      external: [...builtinModules, "commander"],
+      define: { __dirname: '"__dirname"' },
+      banner: {
+        js: 'import { createRequire } from "module"; const require = createRequire(import.meta.url);',
+      },
     });
 
     // 2. Read the bundled output
@@ -33,8 +35,7 @@ async function buildAndAddShebang() {
     // 4. Write the final content back to the file
     await writeFile(outfile, finalContent);
 
-    console.log("Build successful!");
-
+    console.log("Build successful.");
   } catch (error) {
     console.error("Build failed:", error);
     process.exit(1);
@@ -42,3 +43,4 @@ async function buildAndAddShebang() {
 }
 
 buildAndAddShebang();
+
