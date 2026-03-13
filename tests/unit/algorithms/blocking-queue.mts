@@ -35,8 +35,84 @@ describe("Async Blocking Queue", () => {
       queue.enqueue(val);
     });
 
-    const [output, _] = await Promise.all([asyncEnqueue1, asyncEnqueue2]);
-    const output_1 = await Promise.all(output);
-    return expect(input).toEqual(output_1);
+    const [resultPromise, _] = await Promise.all([
+      asyncEnqueue1,
+      asyncEnqueue2,
+    ]);
+    const output = await Promise.all(resultPromise);
+    return expect(input).toEqual(output);
+  });
+
+  it("should apply backpressure when the queue reaches maxSize", async () => {
+    const maxSize = 5;
+    const queue = new BlockingQueue<number>({ maxSize });
+
+    // Fill the queue to its limit
+    for (let i = 0; i < maxSize; i++) {
+      await queue.enqueue(i);
+    }
+
+    let backpressureReleased = false;
+
+    // This enqueue should BLOCK because the queue is full
+    const pendingEnqueue = queue.enqueue(99).then(() => {
+      backpressureReleased = true;
+    });
+
+    // Short delay to prove it's actually stuck/waiting
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(backpressureReleased).toBe(false);
+    expect(queue.size).toBe(maxSize);
+
+    // Dequeue one item to release the pressure
+    await queue.dequeue();
+
+    // Now the pending enqueue should resolve
+    await pendingEnqueue;
+    expect(backpressureReleased).toBe(true);
+    expect(queue.size).toBe(maxSize); // Still maxSize because we dequeued 1 and enqueued 1
+  });
+
+  it("should drain correctly, waiting for all items to be processed", async () => {
+    const queue = new BlockingQueue<number>();
+    const input = [1, 2, 3];
+    const output: number[] = [];
+
+    // Producer adds items
+    input.forEach(async (item) => await queue.enqueue(item));
+
+    // Consumer processes slowly
+    (async () => {
+      for (let i = 0; i < input.length; i++) {
+        await new Promise((res) => setTimeout(res, 20));
+        output.push(await queue.dequeue());
+      }
+    })();
+
+    // Drain should wait for the consumer to finish everything
+    await queue.drain();
+
+    expect(output).toEqual(input);
+    expect(queue.size).toBe(0);
+  });
+
+  it("should reject all pending operations when closed", async () => {
+    const queue = new BlockingQueue<number>({ maxSize: 1 });
+    await queue.enqueue(1); // Fill it
+
+    // Create a pending producer (blocked by backpressure)
+    const pendingProduce = queue.enqueue(2);
+
+    // Create a pending consumer (blocked by empty-check if we were empty,
+    // but here we'll just test the general close rejection)
+    const emptyQueue = new BlockingQueue<number>();
+    const pendingConsume = emptyQueue.dequeue();
+
+    queue.close();
+    emptyQueue.close();
+
+    // Both should reject with an error
+    await expect(pendingProduce).rejects.toThrow("Queue closed");
+    await expect(pendingConsume).rejects.toThrow("Queue closed");
   });
 });
