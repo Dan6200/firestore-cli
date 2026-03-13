@@ -3,6 +3,12 @@
 /////////////////////////////////////////////
 import { ObjectQueue } from "./object-queue";
 
+interface QueueOptions<T> {
+  initialItems?: T[];
+  maxSize?: number;
+  maxPendingDequeues?: number;
+}
+
 export class BlockingQueue<T> {
   private items: ObjectQueue<T>;
   private enqueueResolvers: ObjectQueue<{
@@ -19,9 +25,9 @@ export class BlockingQueue<T> {
   private isDraining = false;
   private readonly maxPendingDequeues = 10_000;
 
-  constructor(items: T[] = [], maxSize = 1000) {
-    this.items = new ObjectQueue<T>(items);
-    this.maxSize = maxSize;
+  constructor(options: QueueOptions<T> = {}) {
+    this.items = new ObjectQueue<T>(options.initialItems ?? []);
+    this.maxSize = options.maxSize ?? 1000;
     this.enqueueResolvers = new ObjectQueue<{
       resolve: () => void;
       reject: (reason: any) => void;
