@@ -34,12 +34,12 @@ export default async (path: string, options: Options) => {
       spinner.text = "Reading document paths from stdin...";
       const stdinData = await readStdin();
       if (stdinData) {
-        docsToDelete = new BlockingQueue(
-          stdinData
+        docsToDelete = new BlockingQueue({
+          initialItems: stdinData
             .split("\n")
             .filter((p) => p.trim())
             .map((p) => getDocumentReference(db, p)),
-        );
+        });
       }
     }
     // 2. Check --file
@@ -53,12 +53,12 @@ export default async (path: string, options: Options) => {
       }
       const fileContent = await readFile(resolve(inputFile), "utf8");
       if (fileContent) {
-        docsToDelete = new BlockingQueue(
-          fileContent
+        docsToDelete = new BlockingQueue({
+          initialItems: fileContent
             .split("\n")
             .filter((p) => p.trim())
             .map((p) => getDocumentReference(db, p)),
-        );
+        });
       }
     }
     // 3. Fallback to path argument
