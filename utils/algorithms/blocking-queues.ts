@@ -76,7 +76,7 @@ export class BlockingQueue<T> {
     this.closed = true;
     while (this.enqueueResolvers.length > 0) {
       const { reject } = this.enqueueResolvers.dequeue()!;
-      reject(new Error("Queue closed: Consumer cancelled"));
+      reject(new Error("Queue closed: Task cancelled"));
     }
     while (this.dequeueResolvers.length > 0) {
       const { reject } = this.dequeueResolvers.dequeue()!;
