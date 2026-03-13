@@ -1,7 +1,7 @@
 import { BlockingQueue } from "../../../utils/algorithms/blocking-queues.js";
 
 describe("Async Blocking Queue", () => {
-  it("must add to queue asynchronously", () => {
+  it("must add to queue asynchronously", async () => {
     const queue = new BlockingQueue();
     const loop1 = 50 + Math.floor(Math.random() * 100);
     const loop2 = 50 + Math.floor(Math.random() * 100);
@@ -16,14 +16,11 @@ describe("Async Blocking Queue", () => {
       .fill("foo")
       .map(async (foo) => queue.enqueue(foo));
 
-    return Promise.all([asyncEnqueue1, asyncEnqueue2, asyncEnqueue3]).then(
-      () => {
-        expect(queue.size).toBe(loop1 + loop2 + loop3);
-      },
-    );
+    await Promise.all([asyncEnqueue1, asyncEnqueue2, asyncEnqueue3]);
+    expect(queue.size).toBe(loop1 + loop2 + loop3);
   });
 
-  it("should dequeue asynchronously and block queue when empty", () => {
+  it("should dequeue asynchronously and block queue when empty", async () => {
     const queue: BlockingQueue<number> = new BlockingQueue();
     const loop = 50 + Math.floor(Math.random() * 100);
     const input: number[] = [];
@@ -38,8 +35,8 @@ describe("Async Blocking Queue", () => {
       queue.enqueue(val);
     });
 
-    return Promise.all([asyncEnqueue1, asyncEnqueue2])
-      .then(([output, _]) => Promise.all(output))
-      .then((output) => expect(input).toEqual(output));
+    const [output, _] = await Promise.all([asyncEnqueue1, asyncEnqueue2]);
+    const output_1 = await Promise.all(output);
+    return expect(input).toEqual(output_1);
   });
 });
