@@ -1,0 +1,17 @@
+import {
+  CollectionReference,
+  DocumentReference,
+} from "@google-cloud/firestore";
+import { BlockingQueue } from "../../utils/algorithms/blocking-queues.js";
+import { isCollection } from "./collection-type-guard.mjs";
+
+export async function discoverPaths(
+  queue: BlockingQueue<CollectionReference | DocumentReference>,
+  ref: CollectionReference | DocumentReference,
+) {
+  if (!isCollection(ref)) return;
+  const docs = await ref.listDocuments();
+  for (const doc of docs) {
+    queue.enqueue(doc);
+  }
+}
