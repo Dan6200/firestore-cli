@@ -73,25 +73,30 @@ describe("Async Blocking Queue", () => {
     expect(queue.size).toBe(maxSize); // Still maxSize because we dequeued 1 and enqueued 1
   });
 
-  it("should drain correctly, waiting for all items to be processed", async () => {
+  it("should drain correctly, waiting for all items to be processed, while rejecting new enqueues", async () => {
     const queue = new BlockingQueue<number>();
     const input = [1, 2, 3];
     const output: number[] = [];
 
     // Producer adds items
-    input.forEach(async (item) => await queue.enqueue(item));
+    for (const item of input) {
+      await queue.enqueue(item);
+    }
 
     // Consumer processes slowly
-    (async () => {
+    const consumer = (async () => {
       for (let i = 0; i < input.length; i++) {
         await new Promise((res) => setTimeout(res, 20));
         output.push(await queue.dequeue());
       }
     })();
 
-    // Drain should wait for the consumer to finish everything
-    await queue.drain();
+    // Drain should wait for the consumer to finish everything and reject upcoming enqueues
+    const drain = queue.drain().then(() => queue.enqueue(100));
 
+    await expect(Promise.all([drain, consumer])).rejects.toMatch(
+      /Queue is draining/,
+    );
     expect(output).toEqual(input);
     expect(queue.size).toBe(0);
   });
