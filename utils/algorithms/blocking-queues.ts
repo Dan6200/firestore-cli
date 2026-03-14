@@ -19,7 +19,7 @@ export class BlockingQueue<T> {
     resolve: (value: T) => void;
     reject: (reason: any) => void;
   }>;
-  private closed = false;
+  private isClosed = false;
   private maxSize: number;
   private drainResolver: () => void;
   private isDraining = false;
@@ -39,10 +39,18 @@ export class BlockingQueue<T> {
   }
 
   async enqueue(item: T): Promise<void> {
-    if (this.closed) return Promise.reject("Queue is closed");
+    if (this.isClosed) return Promise.reject("Queue is closed.");
+    if (this.isDraining) return Promise.reject("Queue is draining.");
 
     if (this.dequeueResolvers.length > 0) {
-      const { resolve } = this.dequeueResolvers.dequeue()!;
+      let resolve;
+      try {
+        ({ resolve } = this.dequeueResolvers.dequeue()!);
+      } catch (e) {
+        throw new Error(`BlockingQueue internal failure: enqueueResolvers.`, {
+          cause: e,
+        });
+      }
       resolve(item);
       return;
     }
@@ -57,18 +65,32 @@ export class BlockingQueue<T> {
 
   dequeue(): Promise<T> {
     if (this.size > 0) {
-      const returnItem = Promise.resolve(this.items.dequeue()!);
-      const { resolve } = this.enqueueResolvers.dequeue()!;
-      resolve();
+      const returnItem = Promise.resolve(this.items.dequeue()!).catch((e) => {
+        throw new Error(
+          `BlockingQueue internal failure: items queue exhausted.`,
+          { cause: e },
+        );
+      });
+      if (this.enqueueResolvers.length > 0) {
+        let resolve;
+        try {
+          ({ resolve } = this.enqueueResolvers.dequeue()!);
+        } catch (e) {
+          throw new Error(`BlockingQueue internal failure: enqueueResolvers.`, {
+            cause: e,
+          });
+        }
+        resolve();
+      }
+
+      if (this.size == 0 && this.isDraining && this.drainResolver) {
+        this.drainResolver();
+        this.drainResolver = null;
+      }
       return returnItem;
     }
 
-    if (this.isDraining && this.drainResolver) {
-      this.drainResolver();
-      this.drainResolver = null;
-    }
-
-    if (this.closed) return Promise.reject(new Error("Queue is closed"));
+    if (this.isClosed) return Promise.reject(new Error("Queue is closed"));
     if (this.dequeueResolvers.length === this.maxPendingDequeues)
       return Promise.reject(new Error("Maximum consumer limit exceeded."));
 
@@ -79,14 +101,14 @@ export class BlockingQueue<T> {
   }
 
   close() {
-    this.closed = true;
+    this.isClosed = true;
     while (this.enqueueResolvers.length > 0) {
       const { reject } = this.enqueueResolvers.dequeue()!;
-      reject(new Error("Queue closed: Task cancelled"));
+      reject(new Error("Queue closed: Task cancelled."));
     }
     while (this.dequeueResolvers.length > 0) {
       const { reject } = this.dequeueResolvers.dequeue()!;
-      reject(new Error("Queue closed: Consumer cancelled"));
+      reject(new Error("Queue closed: Consumer cancelled."));
     }
   }
 
