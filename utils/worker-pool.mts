@@ -16,10 +16,11 @@ export async function workerPool(
     signal?: AbortSignal,
   ) => Promise<WriteResult>,
   timeout = 30_000,
+  concurrencyLimit = 20,
   errCallback?: (message: string, error?: Error) => void,
   logger?: (message: string, level?: "info" | "error" | "debug") => void,
 ) {
-  const limit = pLimit(20);
+  const limit = pLimit(concurrencyLimit);
   const activeTasks = new Set<Promise<void>>();
 
   try {
