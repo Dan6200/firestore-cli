@@ -12,7 +12,7 @@ import {
   CollectionReference,
   DocumentReference,
 } from "@google-cloud/firestore";
-import { processQueue } from "./utils.mjs";
+import { workerPool } from "../utils/worker-pool.mjs";
 
 // Helper function to read from stdin
 function readStdin(): Promise<string> {
@@ -89,7 +89,7 @@ export default async (path: string, options: Options) => {
     }
     const bulkWriter = db.bulkWriter(bulkWriterOptions);
 
-    await processQueue(docsToDelete, options.recurse, (ref) =>
+    await workerPool(docsToDelete, options.recurse, (ref) =>
       bulkWriter.delete(ref),
     );
 
