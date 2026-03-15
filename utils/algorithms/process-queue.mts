@@ -16,7 +16,8 @@ export async function processQueue(
     signal?: AbortSignal,
   ) => Promise<WriteResult>,
   timeout = 30_000,
-  errCallback: (message: string, error?: Error) => void,
+  errCallback?: (message: string, error?: Error) => void,
+  logger?: (message: string, level?: "info" | "error" | "debug") => void,
 ) {
   const limit = pLimit(20);
   const activeTasks = new Set<Promise<void>>();
@@ -67,6 +68,7 @@ export async function processQueue(
         });
 
       activeTasks.add(task);
+      logger(queue.getStatus());
     }
   } catch (err: any) {
     if (err.message !== "Queue closed: Consumer cancelled") throw err;
