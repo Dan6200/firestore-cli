@@ -3,7 +3,7 @@ import {
   DocumentReference,
 } from "@google-cloud/firestore";
 import { BlockingQueue } from "../../utils/algorithms/blocking-queues.js";
-import { isCollection } from "./collection-type-guard.mjs";
+import { isCollection } from "../firestore-utils.mjs";
 
 export async function discoverPaths(
   queue: BlockingQueue<CollectionReference | DocumentReference>,
