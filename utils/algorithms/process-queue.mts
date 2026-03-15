@@ -7,7 +7,6 @@ import { BlockingQueue } from "../../utils/algorithms/blocking-queues.js";
 import pLimit from "p-limit";
 import { isCollection } from "../../utils/firestore-utils.mjs";
 import { discoverPaths } from "./path-discoverer.mjs";
-import { CLI_LOG } from "../logging.mjs";
 
 export async function processQueue(
   queue: BlockingQueue<CollectionReference | DocumentReference>,
@@ -17,6 +16,7 @@ export async function processQueue(
     signal?: AbortSignal,
   ) => Promise<WriteResult>,
   timeout = 30_000,
+  errCallback: (message: string, error?: Error) => void,
 ) {
   const limit = pLimit(20);
   const activeTasks = new Set<Promise<void>>();
@@ -52,9 +52,9 @@ export async function processQueue(
       })
         .catch((error) => {
           if (signal.aborted) {
-            CLI_LOG(`Task timed out for: ${ref.path}`, "error");
+            errCallback(`Task timed out for: ${ref.path}`);
           } else {
-            throw error;
+            errCallback(`Unexpected Error`, error);
           }
         })
         .finally(() => {
