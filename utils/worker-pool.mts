@@ -3,12 +3,12 @@ import {
   DocumentReference,
   WriteResult,
 } from "@google-cloud/firestore";
-import { BlockingQueue } from "../../utils/algorithms/blocking-queues.js";
 import pLimit from "p-limit";
-import { isCollection } from "../../utils/firestore-utils.mjs";
-import { discoverPaths } from "./path-discoverer.mjs";
+import { BlockingQueue } from "./algorithms/blocking-queues.js";
+import { isCollection } from "./firestore-utils.mjs";
+import { discoverPaths } from "./firestore/path-discoverer.mjs";
 
-export async function processQueue(
+export async function workerPool(
   queue: BlockingQueue<CollectionReference | DocumentReference>,
   recursive: boolean,
   callback: (
