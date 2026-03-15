@@ -133,14 +133,24 @@ export class BlockingQueue<T> {
   }
 
   getStatus() {
-    let msg = "";
-    if (this.size === 0) return "System standby.";
-    msg += `Processing ${this.size} items...`;
+    const mem = process.memoryUsage();
+    const heapUsedMB = (mem.heapUsed / 1024 / 1024).toFixed(2);
+    const heapTotalMB = (mem.heapTotal / 1024 / 1024).toFixed(2);
+
+    if (this.isClosed) return "Status: CLOSED (Halted)";
+
+    let msg = `[Queue] Size: ${this.size} | Memory: ${heapUsedMB}/${heapTotalMB} MB`;
+
+    if (this.isDraining) msg = `[DRAINING] ${msg}`;
+
     if (this.waitingConsumers > 0) {
-      msg += `Pending: ${this.waitingConsumers} sonsumers waiting for data...`;
+      msg += ` | Consumers Waiting: ${this.waitingConsumers}`;
     }
+
     if (this.waitingProducers > 0) {
-      msg += `Pending" ${this.waitingProducers} producers waiting to send data...`;
+      msg += ` | Backpressure Active: ${this.waitingProducers} producers blocked`;
     }
+
+    return msg;
   }
 }
