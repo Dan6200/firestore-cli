@@ -1,4 +1,4 @@
-import { isCollection } from "../../../utils/firestore-utils.mjs";
+import { isCollection } from "../../../utils/firestore/is-collection.mjs";
 
 describe("isCollection Type Guard", () => {
   it("should return true for a valid collection reference", () => {
