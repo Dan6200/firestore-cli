@@ -10,10 +10,12 @@ export async function discoverPaths(
   ref: CollectionReference | DocumentReference,
   signal?: AbortSignal,
 ) {
-  if (signal.aborted) return;
+  if (signal?.aborted) return;
   if (!isCollection(ref)) return;
   const docs = await ref.listDocuments();
-  for (const doc of docs) {
-    queue.enqueue(doc);
-  }
+  return Promise.all(
+    docs.map(async (doc) => {
+      if (!signal?.aborted) return queue.enqueue(doc);
+    }),
+  );
 }
