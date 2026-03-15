@@ -54,9 +54,9 @@ export async function workerPool(
       })
         .catch((error) => {
           if (signal.aborted) {
-            errCallback(`Task timed out for: ${ref.path}`);
+            errCallback?.(`Task timed out for: ${ref.path}`);
           } else {
-            errCallback(`Unexpected Error`, error);
+            errCallback?.(`Unexpected Error`, error);
           }
         })
         .finally(() => {
@@ -69,7 +69,7 @@ export async function workerPool(
         });
 
       activeTasks.add(task);
-      logger(queue.getStatus());
+      logger?.(queue.getStatus());
     }
   } catch (err: any) {
     if (err.message !== "Queue closed: Consumer cancelled") throw err;
