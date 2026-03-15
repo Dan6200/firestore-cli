@@ -5,7 +5,7 @@ import {
 } from "@google-cloud/firestore";
 import pLimit from "p-limit";
 import { BlockingQueue } from "./algorithms/blocking-queues.js";
-import { isCollection } from "./firestore-utils.mjs";
+import { isCollection } from "./firestore/is-collection.mjs";
 import { discoverPaths } from "./firestore/path-discoverer.mjs";
 
 export async function workerPool(
