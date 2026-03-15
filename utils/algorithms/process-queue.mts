@@ -7,11 +7,16 @@ import { BlockingQueue } from "../../utils/algorithms/blocking-queues.js";
 import pLimit from "p-limit";
 import { isCollection } from "../../utils/firestore-utils.mjs";
 import { discoverPaths } from "./path-discoverer.mjs";
+import { CLI_LOG } from "../logging.mjs";
 
 export async function processQueue(
   queue: BlockingQueue<CollectionReference | DocumentReference>,
   recursive: boolean,
-  callback: (ref: DocumentReference) => Promise<WriteResult>,
+  callback: (
+    ref: DocumentReference,
+    signal?: AbortSignal,
+  ) => Promise<WriteResult>,
+  timeout = 30_000,
 ) {
   const limit = pLimit(20);
   const activeTasks = new Set<Promise<void>>();
@@ -20,14 +25,18 @@ export async function processQueue(
     while (true) {
       const ref = await queue.dequeue();
 
-      if (activeTasks.size >= 10_000) {
+      if (activeTasks.size >= 100) {
         await Promise.race(activeTasks);
       }
 
+      const controller = new AbortController();
+      const { signal } = controller;
+      let timer: NodeJS.Timeout = null;
       const task = limit(async () => {
+        timer = setTimeout(() => controller.abort(), timeout);
         if (isCollection(ref)) {
           if (recursive) {
-            await discoverPaths(queue, ref);
+            await discoverPaths(queue, ref, signal);
           } else {
             throw new Error("Collection Path provided without --recurse");
           }
@@ -38,15 +47,24 @@ export async function processQueue(
               queue.enqueue(sub);
             }
           }
-          await callback(ref);
+          await callback(ref, signal);
         }
-      }).finally(() => {
-        activeTasks.delete(task);
+      })
+        .catch((error) => {
+          if (signal.aborted) {
+            CLI_LOG(`Task timed out for: ${ref.path}`, "error");
+          } else {
+            throw error;
+          }
+        })
+        .finally(() => {
+          clearTimeout(timer);
+          activeTasks.delete(task);
 
-        if (queue.size === 0 && activeTasks.size === 0) {
-          queue.close();
-        }
-      });
+          if (queue.size === 0 && activeTasks.size === 0) {
+            queue.close();
+          }
+        });
 
       activeTasks.add(task);
     }
