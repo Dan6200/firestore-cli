@@ -1,0 +1,103 @@
+import { jest } from "@jest/globals";
+import { BlockingQueue } from "../../utils/algorithms/blocking-queues.js";
+import { workerPool } from "../../utils/worker-pool.mjs";
+import { WriteResult } from "@google-cloud/firestore";
+
+// Mock the discovery module
+jest.unstable_mockModule("../../utils/firestore/path-discoverer.mjs", () => ({
+  discoverPaths: jest.fn(),
+}));
+
+// Re-import after mocking
+const { discoverPaths } = await import(
+  "../../utils/firestore/path-discoverer.mjs"
+);
+
+describe("Worker Pool Engine", () => {
+  let queue: BlockingQueue<any>;
+  let mockCallback: jest.Mock;
+
+  beforeEach(() => {
+    queue = new BlockingQueue({ maxSize: 100 });
+    mockCallback = jest
+      .fn<() => Promise<WriteResult>>()
+      .mockResolvedValue({ writeTime: new Date() } as unknown as WriteResult);
+    jest.clearAllMocks();
+  });
+
+  it("should process a single document and shut down", async () => {
+    const mockDoc = {
+      type: "document",
+      path: "users/1",
+      listCollections: jest
+        .fn<() => Promise<Array<string>>>()
+        .mockResolvedValue([]),
+    };
+
+    await queue.enqueue(mockDoc);
+
+    // This should resolve when the queue and activeTasks are both 0
+    await workerPool(queue, true, mockCallback as any);
+
+    expect(mockCallback).toHaveBeenCalledWith(mockDoc, expect.any(AbortSignal));
+    expect(queue.getStatus()).toContain("CLOSED");
+  });
+
+  it("should respect the recursive flag for collections", async () => {
+    const mockCol = { type: "collection", path: "users" };
+    await queue.enqueue(mockCol);
+
+    await workerPool(queue, true, mockCallback as any);
+
+    expect(discoverPaths).toHaveBeenCalledWith(queue, mockCol);
+  });
+
+  it("should throw error and stop if collection is found without recurse flag", async () => {
+    const mockCol = { type: "collection", path: "users" };
+    await queue.enqueue(mockCol);
+
+    await expect(workerPool(queue, false, mockCallback as any)).rejects.toThrow(
+      "Collection Path provided without --recurse",
+    );
+  });
+
+  it("should trigger abort signal on timeout", async () => {
+    // 1. Arrange: Create a callback that waits longer than the timeout
+    // We use a slightly longer delay than the timeout (100ms vs 150ms)
+    mockCallback.mockImplementation(async (_, signal: AbortSignal) => {
+      return new Promise((resolve, _) => {
+        const timer = setTimeout(() => {
+          // If the signal aborted as expected, we resolve "successfully"
+          // for the test to inspect the state.
+          resolve({} as any);
+        }, 150);
+
+        // Listen for the abort event to resolve/reject earlier if needed
+        signal?.addEventListener("abort", () => {
+          clearTimeout(timer);
+          resolve({} as any);
+        });
+      });
+    });
+
+    const mockDoc = {
+      type: "document",
+      path: "slow/doc",
+      listCollections: jest
+        .fn<() => Promise<Array<string>>>()
+        .mockResolvedValue([]),
+    };
+    await queue.enqueue(mockDoc);
+
+    // 2. Act: Set a short timeout of 50ms
+    const timeoutMs = 50;
+    await workerPool(queue, true, mockCallback as any, timeoutMs);
+
+    // 3. Assert: Check the signal state in the last call
+    const lastCallArgs = mockCallback.mock.calls[0];
+    const signal = lastCallArgs[1] as AbortSignal;
+
+    expect(signal).toBeDefined();
+    expect(signal.aborted).toBe(true); // This is the crucial check
+  });
+});
