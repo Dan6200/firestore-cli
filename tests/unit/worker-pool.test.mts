@@ -16,12 +16,14 @@ const { discoverPaths } = await import(
 describe("Worker Pool Engine", () => {
   let queue: BlockingQueue<any>;
   let mockCallback: jest.Mock;
+  let mockErrCallback: jest.Mock;
 
   beforeEach(() => {
     queue = new BlockingQueue({ maxSize: 100 });
     mockCallback = jest
       .fn<() => Promise<WriteResult>>()
       .mockResolvedValue({ writeTime: new Date() } as unknown as WriteResult);
+    mockErrCallback = jest.fn<(reason: string, err: Error | any) => void>();
     jest.clearAllMocks();
   });
 
@@ -39,6 +41,7 @@ describe("Worker Pool Engine", () => {
     // This should resolve when the queue and activeTasks are both 0
     await workerPool(queue, mockCallback as any, null, null, {
       recursive: true,
+      discoverer: discoverPaths,
     });
 
     expect(mockCallback).toHaveBeenCalledWith(mockDoc, expect.any(AbortSignal));
@@ -51,20 +54,32 @@ describe("Worker Pool Engine", () => {
 
     await workerPool(queue, mockCallback as any, null, null, {
       recursive: true,
+      discoverer: discoverPaths,
     });
 
     await new Promise((resolve) => setImmediate(resolve));
 
-    expect(discoverPaths).toHaveBeenCalledWith(queue, mockCol);
+    expect(discoverPaths).toHaveBeenCalledWith(
+      queue,
+      mockCol,
+      expect.any(AbortSignal),
+    );
   });
 
   it("should throw error and stop if collection is found without recurse flag", async () => {
     const mockCol = { type: "collection", path: "users" };
     await queue.enqueue(mockCol);
 
-    await expect(
-      workerPool(queue, mockCallback as any, null, null, { recursive: false }),
-    ).rejects.toThrow("Collection Path provided without --recurse");
+    await workerPool(queue, mockCallback as any, mockErrCallback, null, {
+      recursive: false,
+    });
+
+    expect(mockErrCallback).toHaveBeenCalledWith(
+      "Unexpected Error",
+      expect.objectContaining({
+        message: "Collection Path provided without --recurse",
+      }),
+    );
   });
 
   it("should trigger abort signal on timeout", async () => {
