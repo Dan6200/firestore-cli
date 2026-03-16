@@ -89,8 +89,12 @@ export default async (path: string, options: Options) => {
     }
     const bulkWriter = db.bulkWriter(bulkWriterOptions);
 
-    await workerPool(docsToDelete, options.recurse, (ref) =>
-      bulkWriter.delete(ref),
+    await workerPool(
+      docsToDelete,
+      (ref) => bulkWriter.delete(ref),
+      null,
+      null,
+      { recursive: options.recurse },
     );
 
     await bulkWriter.close();

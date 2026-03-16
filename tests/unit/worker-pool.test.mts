@@ -37,7 +37,9 @@ describe("Worker Pool Engine", () => {
     await queue.enqueue(mockDoc);
 
     // This should resolve when the queue and activeTasks are both 0
-    await workerPool(queue, true, mockCallback as any);
+    await workerPool(queue, mockCallback as any, null, null, {
+      recursive: true,
+    });
 
     expect(mockCallback).toHaveBeenCalledWith(mockDoc, expect.any(AbortSignal));
     expect(queue.getStatus()).toContain("CLOSED");
@@ -47,7 +49,11 @@ describe("Worker Pool Engine", () => {
     const mockCol = { type: "collection", path: "users" };
     await queue.enqueue(mockCol);
 
-    await workerPool(queue, true, mockCallback as any);
+    await workerPool(queue, mockCallback as any, null, null, {
+      recursive: true,
+    });
+
+    await new Promise((resolve) => setImmediate(resolve));
 
     expect(discoverPaths).toHaveBeenCalledWith(queue, mockCol);
   });
@@ -56,9 +62,9 @@ describe("Worker Pool Engine", () => {
     const mockCol = { type: "collection", path: "users" };
     await queue.enqueue(mockCol);
 
-    await expect(workerPool(queue, false, mockCallback as any)).rejects.toThrow(
-      "Collection Path provided without --recurse",
-    );
+    await expect(
+      workerPool(queue, mockCallback as any, null, null, { recursive: false }),
+    ).rejects.toThrow("Collection Path provided without --recurse");
   });
 
   it("should trigger abort signal on timeout", async () => {
@@ -90,8 +96,11 @@ describe("Worker Pool Engine", () => {
     await queue.enqueue(mockDoc);
 
     // 2. Act: Set a short timeout of 50ms
-    const timeoutMs = 50;
-    await workerPool(queue, true, mockCallback as any, timeoutMs);
+    const timeout = 50;
+    await workerPool(queue, mockCallback as any, null, null, {
+      recursive: false,
+      timeout,
+    });
 
     // 3. Assert: Check the signal state in the last call
     const lastCallArgs = mockCallback.mock.calls[0];
