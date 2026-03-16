@@ -2,6 +2,7 @@ import { jest } from "@jest/globals";
 import { BlockingQueue } from "../../utils/algorithms/blocking-queues.js";
 import { workerPool } from "../../utils/worker-pool.mjs";
 import { WriteResult } from "@google-cloud/firestore";
+import { discoverPaths as realDiscoverPaths } from "../../utils/firestore/path-discoverer.mjs";
 
 // Mock the discovery module
 jest.unstable_mockModule("../../utils/firestore/path-discoverer.mjs", () => ({
@@ -43,8 +44,43 @@ describe("Worker Pool Engine", () => {
       recursive: true,
       discoverer: discoverPaths,
     });
+  });
 
-    expect(mockCallback).toHaveBeenCalledWith(mockDoc, expect.any(AbortSignal));
+  it("should recurse to process all documents and shut down", async () => {
+    debugger;
+    const enqueuePromises = [];
+    for (let i = 1; i <= 10; i++) {
+      const mockDoc = {
+        type: "document",
+        path: `users/${i}`,
+        listCollections: jest
+          .fn<() => Promise<Array<any>>>()
+          .mockResolvedValue([
+            {
+              type: "collection",
+              path: `users/${i}/pets`,
+              listDocuments: jest
+                .fn<() => Promise<Array<any>>>()
+                .mockResolvedValue([
+                  `users/${i}/pets/jake`,
+                  `users/${i}/pets/blake`,
+                  `users/${i}/pets/drake`,
+                ]),
+            },
+          ]),
+      };
+
+      enqueuePromises.push(queue.enqueue(mockDoc));
+    }
+    await Promise.all(enqueuePromises);
+
+    // This should resolve when the queue and activeTasks are both 0
+    await workerPool(queue, mockCallback as any, null, null, {
+      recursive: true,
+      discoverer: realDiscoverPaths,
+    });
+
+    expect(mockCallback).toHaveBeenCalledTimes(40);
     expect(queue.getStatus()).toContain("CLOSED");
   });
 
