@@ -62,9 +62,27 @@ describe("Worker Pool Engine", () => {
               listDocuments: jest
                 .fn<() => Promise<Array<any>>>()
                 .mockResolvedValue([
-                  `users/${i}/pets/jake`,
-                  `users/${i}/pets/blake`,
-                  `users/${i}/pets/drake`,
+                  {
+                    type: "document",
+                    path: `users/${i}/pets/jake`,
+                    listCollections: jest
+                      .fn<() => Promise<never[]>>()
+                      .mockResolvedValue([]),
+                  },
+                  {
+                    type: "document",
+                    path: `users/${i}/pets/blake`,
+                    listCollections: jest
+                      .fn<() => Promise<never[]>>()
+                      .mockResolvedValue([]),
+                  },
+                  {
+                    type: "document",
+                    path: `users/${i}/pets/drake`,
+                    listCollections: jest
+                      .fn<() => Promise<never[]>>()
+                      .mockResolvedValue([]),
+                  },
                 ]),
             },
           ]),
