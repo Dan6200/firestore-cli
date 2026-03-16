@@ -10,16 +10,26 @@ import { discoverPaths } from "./firestore/path-discoverer.mjs";
 
 export async function workerPool(
   queue: BlockingQueue<CollectionReference | DocumentReference>,
-  recursive: boolean,
   callback: (
     ref: DocumentReference,
     signal?: AbortSignal,
   ) => Promise<WriteResult>,
-  timeout = 30_000,
-  concurrencyLimit = 20,
   errCallback?: (message: string, error?: Error) => void,
   logger?: (message: string, level?: "info" | "error" | "debug") => void,
+  options: {
+    recursive?: boolean;
+    timeout?: number;
+    concurrencyLimit?: number;
+    discoverer?: typeof discoverPaths;
+  } = {},
 ) {
+  const {
+    recursive = false,
+    timeout = 30_000,
+    concurrencyLimit = 20,
+    discoverer,
+  } = options;
+
   const limit = pLimit(concurrencyLimit);
   const activeTasks = new Set<Promise<void>>();
 
@@ -38,12 +48,13 @@ export async function workerPool(
         timer = setTimeout(() => controller.abort(), timeout);
         if (isCollection(ref)) {
           if (recursive) {
-            await discoverPaths(queue, ref, signal);
+            await discoverer(queue, ref, signal);
           } else {
             throw new Error("Collection Path provided without --recurse");
           }
         } else {
           if (recursive) {
+            console.log("should not run");
             const subCollections = await ref.listCollections();
             for (const sub of subCollections) {
               queue.enqueue(sub);
@@ -72,6 +83,6 @@ export async function workerPool(
       logger?.(queue.getStatus());
     }
   } catch (err: any) {
-    if (err.message !== "Queue closed: Consumer cancelled") throw err;
+    if (!err.message.match(/Queue closed:/)) throw err;
   }
 }
