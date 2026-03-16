@@ -14,7 +14,7 @@ export async function workerPool(
     ref: DocumentReference,
     signal?: AbortSignal,
   ) => Promise<WriteResult>,
-  errCallback?: (message: string, error?: Error) => void,
+  errCallback?: (reason: string, error?: Error) => void,
   logger?: (message: string, level?: "info" | "error" | "debug") => void,
   options: {
     recursive?: boolean;
@@ -82,6 +82,8 @@ export async function workerPool(
       logger?.(queue.getStatus());
     }
   } catch (err: any) {
-    if (!err.message.match(/Queue closed:/)) throw err;
+    if (!err.message.match(/Queue closed:/)) {
+      errCallback?.(`Unexpected Error`, err);
+    }
   }
 }
