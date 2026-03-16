@@ -18,6 +18,19 @@ describe("Worker Pool Engine", () => {
   let queue: BlockingQueue<any>;
   let mockCallback: jest.Mock;
   let mockErrCallback: jest.Mock;
+  const createMockDoc = (path: string, subCollections: any[] = []) => ({
+    type: "document",
+    path,
+    listCollections: jest
+      .fn<() => Promise<any[]>>()
+      .mockResolvedValue(subCollections),
+  });
+
+  const createMockCol = (path: string, documents: any[] = []) => ({
+    type: "collection",
+    path,
+    listDocuments: jest.fn<() => Promise<any[]>>().mockResolvedValue(documents),
+  });
 
   beforeEach(() => {
     queue = new BlockingQueue({ maxSize: 100 });
@@ -47,52 +60,22 @@ describe("Worker Pool Engine", () => {
   });
 
   it("should recurse to process all documents and shut down", async () => {
-    debugger;
     const enqueuePromises = [];
-    for (let i = 1; i <= 10; i++) {
-      const mockDoc = {
-        type: "document",
-        path: `users/${i}`,
-        listCollections: jest
-          .fn<() => Promise<Array<any>>>()
-          .mockResolvedValue([
-            {
-              type: "collection",
-              path: `users/${i}/pets`,
-              listDocuments: jest
-                .fn<() => Promise<Array<any>>>()
-                .mockResolvedValue([
-                  {
-                    type: "document",
-                    path: `users/${i}/pets/jake`,
-                    listCollections: jest
-                      .fn<() => Promise<never[]>>()
-                      .mockResolvedValue([]),
-                  },
-                  {
-                    type: "document",
-                    path: `users/${i}/pets/blake`,
-                    listCollections: jest
-                      .fn<() => Promise<never[]>>()
-                      .mockResolvedValue([]),
-                  },
-                  {
-                    type: "document",
-                    path: `users/${i}/pets/drake`,
-                    listCollections: jest
-                      .fn<() => Promise<never[]>>()
-                      .mockResolvedValue([]),
-                  },
-                ]),
-            },
-          ]),
-      };
 
-      enqueuePromises.push(queue.enqueue(mockDoc));
+    for (let i = 1; i <= 10; i++) {
+      const pets = [
+        createMockDoc(`users/${i}/pets/jake`),
+        createMockDoc(`users/${i}/pets/blake`),
+        createMockDoc(`users/${i}/pets/drake`),
+      ];
+      const petCollection = createMockCol(`users/${i}/pets`, pets);
+      const userDoc = createMockDoc(`users/${i}`, [petCollection]);
+
+      enqueuePromises.push(queue.enqueue(userDoc));
     }
     await Promise.all(enqueuePromises);
 
-    // This should resolve when the queue and activeTasks are both 0
+    // This should resolve when the queue and activeTasks are both empty
     await workerPool(queue, mockCallback as any, null, null, {
       recursive: true,
       discoverer: realDiscoverPaths,
@@ -102,6 +85,38 @@ describe("Worker Pool Engine", () => {
     expect(queue.getStatus()).toContain("CLOSED");
   });
 
+  it("should recurse even deeper to process all documents and shut down", async () => {
+    const enqueuePromises = [];
+
+    for (let i = 1; i <= 10; i++) {
+      const userDocPath = `users/${i}`;
+      const petColPath = `users/${i}/pets`;
+      const petNames = ["jake", "blake", "drake"];
+
+      const pets = petNames.map((name) => {
+        const petDocPath = `${petColPath}/${name}`;
+        const treatColPath = `${petDocPath}/treats`;
+        const treatDoc = createMockDoc(`${treatColPath}/bone`);
+        const treatCol = createMockCol(treatColPath, [treatDoc]);
+        return createMockDoc(petDocPath, [treatCol]);
+      });
+
+      const petCollection = createMockCol(petColPath, pets);
+      const userDoc = createMockDoc(userDocPath, [petCollection]);
+
+      enqueuePromises.push(queue.enqueue(userDoc));
+    }
+    await Promise.all(enqueuePromises);
+
+    // This should resolve when the queue and activeTasks are both empty
+    await workerPool(queue, mockCallback as any, null, null, {
+      recursive: true,
+      discoverer: realDiscoverPaths,
+    });
+
+    expect(mockCallback).toHaveBeenCalledTimes(70);
+    expect(queue.getStatus()).toContain("CLOSED");
+  });
   it("should respect the recursive flag for collections", async () => {
     const mockCol = { type: "collection", path: "users" };
     await queue.enqueue(mockCol);
