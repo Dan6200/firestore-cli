@@ -63,10 +63,22 @@ export async function workerPool(
         }
       })
         .catch((error) => {
+          let reason: string;
           if (signal.aborted) {
-            errCallback?.(`Task timed out for: ${ref.path}`);
+            if (errCallback) {
+              reason = `Task timed out for: ${ref.path}`;
+              errCallback(reason);
+            } else {
+              console.error(reason);
+            }
           } else {
-            errCallback?.(`Unexpected Error`, error);
+            reason = "Unexpected Error";
+            if (errCallback) {
+              errCallback(reason, error);
+            } else {
+              console.log(reason);
+              console.error(error);
+            }
           }
         })
         .finally(() => {
@@ -86,4 +98,5 @@ export async function workerPool(
       errCallback?.(`Unexpected Error`, err);
     }
   }
+  await Promise.allSettled(activeTasks);
 }
