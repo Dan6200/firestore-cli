@@ -48,13 +48,12 @@ export async function workerPool(
         timer = setTimeout(() => controller.abort(), timeout);
         if (isCollection(ref)) {
           if (recursive) {
-            await discoverer(queue, ref, signal);
+            await discoverer?.(queue, ref, signal);
           } else {
             throw new Error("Collection Path provided without --recurse");
           }
         } else {
           if (recursive) {
-            console.log("should not run");
             const subCollections = await ref.listCollections();
             for (const sub of subCollections) {
               queue.enqueue(sub);
