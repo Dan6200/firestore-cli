@@ -3,10 +3,10 @@ import {
   DocumentReference,
   WriteResult,
 } from "@google-cloud/firestore";
-import pLimit from "p-limit";
 import { BlockingQueue } from "./algorithms/blocking-queues.js";
 import { isCollection } from "./firestore/is-collection.mjs";
 import { discoverPaths } from "./firestore/path-discoverer.mjs";
+import { AsyncGate } from "./async-gate.mjs";
 
 export async function workerPool(
   queue: BlockingQueue<CollectionReference | DocumentReference>,
@@ -30,8 +30,8 @@ export async function workerPool(
     discoverer,
   } = options;
 
-  const limit = pLimit(concurrencyLimit);
-  const activeTasks = new Set<Promise<void>>();
+  const gate = new AsyncGate(concurrencyLimit);
+  const activeTasks = new Set<Promise<unknown>>();
 
   try {
     while (true) {
@@ -44,24 +44,25 @@ export async function workerPool(
       const controller = new AbortController();
       const { signal } = controller;
       let timer: NodeJS.Timeout = null;
-      const task = limit(async () => {
-        timer = setTimeout(() => controller.abort(), timeout);
-        if (isCollection(ref)) {
-          if (recursive) {
-            await discoverer?.(queue, ref, signal);
-          } else {
-            throw new Error("Collection Path provided without --recurse");
-          }
-        } else {
-          if (recursive) {
-            const subCollections = await ref.listCollections();
-            for (const sub of subCollections) {
-              queue.enqueue(sub);
+      const task = gate
+        .run(async () => {
+          timer = setTimeout(() => controller.abort(), timeout);
+          if (isCollection(ref)) {
+            if (recursive) {
+              await discoverer?.(queue, ref, signal);
+            } else {
+              throw new Error("Collection Path provided without --recurse");
             }
+          } else {
+            if (recursive) {
+              const subCollections = await ref.listCollections();
+              for (const sub of subCollections) {
+                queue.enqueue(sub);
+              }
+            }
+            await callback(ref, signal);
           }
-          await callback(ref, signal);
-        }
-      })
+        })
         .catch((error) => {
           let reason: string;
           if (signal.aborted) {
