@@ -3,10 +3,10 @@ import {
   DocumentReference,
   WriteResult,
 } from "@google-cloud/firestore";
-import { BlockingQueue } from "./algorithms/blocking-queues.js";
-import { isCollection } from "./firestore/is-collection.mjs";
-import { discoverPaths } from "./firestore/path-discoverer.mjs";
-import { AsyncGate } from "./async-gate.mjs";
+import { BlockingQueue } from "../algorithms/blocking-queues.js";
+import { isCollection } from "../firestore/is-collection.mjs";
+import { discoverPaths } from "../firestore/path-discoverer.mjs";
+import { AsyncGate } from "../async-gate.mjs";
 
 export async function workerPool(
   queue: BlockingQueue<CollectionReference | DocumentReference>,
@@ -96,7 +96,13 @@ export async function workerPool(
     }
   } catch (err: any) {
     if (!err.message.match(/Queue closed:/)) {
-      errCallback?.(`Unexpected Error`, err);
+      const reason = `Unexpected Error`;
+      if (errCallback) {
+        errCallback(reason, err);
+      } else {
+        console.log(reason);
+        console.error(err);
+      }
     }
   }
   await Promise.allSettled(activeTasks);

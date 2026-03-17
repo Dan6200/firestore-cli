@@ -1,6 +1,6 @@
 import { jest } from "@jest/globals";
 import { BlockingQueue } from "../../utils/algorithms/blocking-queues.js";
-import { workerPool } from "../../utils/worker-pool.mjs";
+import { workerPool } from "../../utils/worker-pool/main.mjs";
 import { WriteResult } from "@google-cloud/firestore";
 import { discoverPaths as realDiscoverPaths } from "../../utils/firestore/path-discoverer.mjs";
 

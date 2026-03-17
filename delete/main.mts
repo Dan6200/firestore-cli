@@ -12,7 +12,7 @@ import {
   CollectionReference,
   DocumentReference,
 } from "@google-cloud/firestore";
-import { workerPool } from "../utils/worker-pool.mjs";
+import { workerPool } from "../utils/worker-pool/main.mjs";
 
 // Helper function to read from stdin
 function readStdin(): Promise<string> {
