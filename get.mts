@@ -116,11 +116,9 @@ async function handleStreamedGet(
     Math.max(1, Math.log2(options.whiteSpace || 2)),
   );
 
-  destination.write("[" + "\n".repeat(NEWLINE_AMOUNT));
-
   firestoreStream.on("data", (doc) => {
-    if (!isFirst) {
-      destination.write("," + "\n".repeat(NEWLINE_AMOUNT));
+    if (isFirst) {
+      destination.write("[" + "\n".repeat(NEWLINE_AMOUNT));
     }
     destination.write(
       formatDocument(doc, chalk, options.whiteSpace, {
@@ -132,7 +130,7 @@ async function handleStreamedGet(
   });
 
   firestoreStream.on("end", () => {
-    destination.write("\n" + "]");
+    destination.write("]");
     if (!failedToStartPager) {
       pager.stdin.end();
     }
