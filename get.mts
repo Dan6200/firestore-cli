@@ -23,10 +23,35 @@ const chalk = new Chalk({ level: 3 });
 
 // Helper to read from stdin
 function readStdin(): Promise<string> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let data = "";
-    process.stdin.on("data", (chunk) => (data += chunk));
-    process.stdin.on("end", () => resolve(data));
+
+    // 1. Set encoding so 'chunk' is a string, not a Buffer
+    process.stdin.setEncoding("utf-8");
+
+    // 2. Handle data chunks
+    process.stdin.on("data", (chunk) => {
+      data += chunk;
+    });
+
+    // 3. Handle the end of the stream
+    process.stdin.on("end", () => {
+      resolve(data);
+    });
+
+    // 4. Handle errors (essential for CLI tools)
+    process.stdin.on("error", (err) => {
+      reject(err);
+    });
+
+    // 5. In some environments, you need to resume the stream manually
+    if (process.stdin.isTTY) {
+      // If it's a TTY and not a pipe, it might never "end"
+      // You might want to resolve empty or handle differently
+      resolve("");
+    } else {
+      process.stdin.resume();
+    }
   });
 }
 
@@ -160,6 +185,12 @@ async function handlePipedOrFileGet(
     const existingDocs = docSnapshots.filter((d) => d.exists);
 
     const destination = failedToStartPager ? process.stdout : pager.stdin;
+    destination.on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code === "EPIPE") {
+        process.exit(0);
+      }
+    });
+
     if (failedToStartPager) spinner.succeed("Done!");
     else spinner.succeed("Done! Piping to pager.");
 
@@ -193,8 +224,8 @@ export default async (path: string, options: Options) => {
 
     if (!failedToStartPager) {
       pager.stdin.on("error", (err: NodeJS.ErrnoException) => {
-        if (err.code !== "EPIPE") {
-          throw err;
+        if (err.code === "EPIPE") {
+          process.exit(0);
         }
       });
     }

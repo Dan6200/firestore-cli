@@ -21,6 +21,12 @@ export default async (collection: string, options: Options) => {
 
     if (docs.empty) return;
 
+    process.stdout.on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code === "EPIPE") {
+        process.exit(0);
+      }
+    });
+
     // Check if output is to a terminal or a pipe
     if (process.stdout.isTTY) {
       // --- Interactive Mode: Use Pager ---
@@ -37,8 +43,8 @@ export default async (collection: string, options: Options) => {
       // Graceful exit setup
       if (pager) {
         pager.stdin.on("error", (err: NodeJS.ErrnoException) => {
-          if (err.code !== "EPIPE") {
-            throw err;
+          if (err.code === "EPIPE") {
+            process.exit(0);
           }
         });
       }
@@ -69,3 +75,4 @@ export default async (collection: string, options: Options) => {
     process.exitCode = 1;
   }
 };
+
