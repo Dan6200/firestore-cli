@@ -4,13 +4,14 @@ import { authenticateFirestore } from "../auth/authenticate-firestore.mjs";
 import { CLI_LOG } from "../utils/logging.mjs";
 import { getCollectionReference } from "../utils/get-firestore-reference.mjs";
 import handleWhereClause from "./utils.mjs";
-import { initializePager } from "../init-pager.mjs";
+import { initializePager } from "../pager/init.mjs";
 
 export default async (collection: string, options: Options) => {
   let spinner;
+  let db = null;
   try {
     spinner = ora("Authenticating Firestore DB").start();
-    const db = await authenticateFirestore(options);
+    db = await authenticateFirestore(options);
     spinner.succeed("Successfully authenticated!");
 
     spinner.start("Querying documents...");
@@ -69,10 +70,17 @@ export default async (collection: string, options: Options) => {
         process.stdout.write(doc.ref.path + "\n");
       });
     }
+    process.exitCode = 0;
   } catch (error) {
     if (spinner) spinner.fail("An error occurred.");
     CLI_LOG(error.message, "error");
     process.exitCode = 1;
+  } finally {
+    await db?.terminate();
+    process.stdout.write("", () => {
+      process.exit(process.exitCode || 0);
+    });
+    process.stdout.end();
   }
 };
 
