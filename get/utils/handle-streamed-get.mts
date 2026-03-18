@@ -51,7 +51,7 @@ export async function handleStreamedGet(
       isFirst = false;
     }
 
-    destination.write("\n]");
+    destination.write("]");
 
     // 6. Finalize Pager
     if (!failedToStartPager) {
@@ -62,7 +62,7 @@ export async function handleStreamedGet(
     }
   } catch (err: any) {
     if (!failedToStartPager) {
-      destination.write("\n] // Stream Interrupted");
+      destination.write("] // Stream Interrupted");
       pager.stdin.end();
     }
     CLI_LOG(err.message, "error");
