@@ -11,7 +11,9 @@ declare module "commander" {
     bulk?: boolean;
     file?: string;
     fileType?: "JSON" | "CSV" | "YAML";
+    noPager?: boolean;
     pager?: string | boolean;
+    pagerArgs?: string[];
     merge?: boolean;
     projectId?: string;
     stream?: boolean;
