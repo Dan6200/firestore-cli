@@ -4,7 +4,7 @@ import {
   WriteResult,
 } from "@google-cloud/firestore";
 import { BlockingQueue } from "../algorithms/blocking-queues.js";
-import { isCollection } from "../firestore/is-collection.mjs";
+import { isCollection } from "../firestore/type-guards.mjs";
 import { discoverPaths } from "../firestore/path-discoverer.mjs";
 import { AsyncGate } from "../async-gate.mjs";
 
