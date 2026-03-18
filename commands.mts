@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import set from "./set.mjs";
-import get from "./get.mjs";
+import get from "./get/main.mjs";
 import query from "./query/main.mjs";
 import deleteDoc from "./delete/main.mjs";
 import whereOptionParser from "./utils/where-option-parser.mjs";
@@ -11,8 +11,6 @@ const packageJson = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
 );
 const program = new Command();
-
-/* TODO: Big Deal!!! Replace all dynamic imports as older versions of node don't have those!!! */
 
 try {
   program
@@ -124,7 +122,6 @@ try {
     .option(
       "--pager-args [ARGS...]",
       "The arguments which should be passed to the pager",
-      ["-R", "-F", "-X"],
     )
     .action(query);
 
@@ -159,7 +156,6 @@ try {
     .option(
       "--pager-args [ARGS...]",
       "The arguments which should be passed to the pager",
-      ["-R", "-F", "-X"],
     )
     .option("--stream", "Stream documents from Firestore one by one.")
     .option("--debug", "Set log level to DEBUG")
