@@ -37,6 +37,7 @@ export default (arg: string, prevArgs: any[] = []): any[] => {
   // Boolean Check
   if (arg.toLowerCase() === "true") return prevArgs.concat([true]);
   if (arg.toLowerCase() === "false") return prevArgs.concat([false]);
+  if (arg.toLowerCase() === "null") return prevArgs.concat([null]);
 
   // Explicitly Quoted Numbers (e.g. "123" -> "123" as string)
   const isQuoted =
