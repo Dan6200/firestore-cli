@@ -1,25 +1,49 @@
-import { DocumentSnapshot, QuerySnapshot } from "@google-cloud/firestore";
+import {
+  DocumentSnapshot,
+  QueryDocumentSnapshot,
+  QuerySnapshot,
+} from "@google-cloud/firestore";
 import { Options } from "commander";
+import { isDocSnapshot, isQuerySnapshot } from "../firestore/type-guards.mjs";
 
 export function printJSON(
-  snapshot: DocumentSnapshot | QuerySnapshot | DocumentSnapshot[],
+  snapshot:
+    | DocumentSnapshot
+    | QuerySnapshot
+    | DocumentSnapshot[]
+    | QueryDocumentSnapshot[],
   options: Options,
 ) {
-  const snapArray: any[] = [];
-  if (
-    snapshot instanceof QuerySnapshot ||
-    (Array.isArray(snapshot) && snapshot instanceof DocumentSnapshot)
-  ) {
-    snapshot.forEach((doc) => snapArray.push({ id: doc.id, data: doc.data() }));
-    return JSON.stringify(snapArray, null, options.whiteSpace ?? 2);
+  const whiteSpace = options.whiteSpace ?? 2;
+
+  // 1. Handle Array of Snapshots
+  if (Array.isArray(snapshot)) {
+    const snapArray = snapshot.map((doc) => ({
+      id: doc.id,
+      // We check for the method because of the potential 'Firestore2' issue
+      data:
+        typeof doc.data === "function" ? doc.data() : (doc as any)._fieldsProto,
+    }));
+    return JSON.stringify(snapArray, null, whiteSpace);
   }
-  if (snapshot instanceof DocumentSnapshot)
+
+  // 2. Handle QuerySnapshot
+  if (isQuerySnapshot(snapshot)) {
+    const snapArray: any[] = [];
+    snapshot.forEach((doc) => snapArray.push({ id: doc.id, data: doc.data() }));
+    return JSON.stringify(snapArray, null, whiteSpace);
+  }
+
+  // 3. Handle Single DocumentSnapshot
+  if (isDocSnapshot(snapshot)) {
     return JSON.stringify(
       { id: snapshot.id, data: snapshot.data() },
       null,
-      options.whiteSpace ?? 2,
+      whiteSpace,
     );
+  }
+
   throw new Error(
-    "Snapshot must be an instance of QuerySnapshot or DocumentSnapshot",
+    "Provided input is not a recognized Firestore Snapshot type.",
   );
 }
