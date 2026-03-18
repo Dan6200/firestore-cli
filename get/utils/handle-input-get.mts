@@ -5,6 +5,7 @@ import { CLI_LOG } from "../../utils/logging.mjs";
 import { printJSON } from "../../utils/print/json.mjs";
 import { printDocsInBulk } from "./print-docs-in-bulk.mjs";
 import { initializePager } from "../../pager/init.mjs";
+import { formatDocument } from "../../utils/print/format-document.mjs";
 
 export async function handleGetFromInput(
   paths: string[],
@@ -39,22 +40,46 @@ export async function handleGetFromInput(
 
     // 4. STREAMING LOOP (OOM Protection)
     // We fetch one-by-one (or in small batches) to keep memory flat
+    let isFirst = true;
     for (const path of paths) {
       const doc = await db.doc(path).get();
+      const NEWLINE_AMOUNT = Math.max(
+        1,
+        Math.floor(Math.log2(options.whiteSpace || 2)),
+      );
 
       if (doc.exists) {
         if (options.json) {
           // printJSON usually expects an array, so we wrap the single doc
-          const output = printJSON([doc], options);
+          const output = printJSON(doc, options);
           const canWrite = destination.write(output + "\n");
           if (!canWrite && !failedToStartPager) {
             await new Promise((r) => pagerInstance.stdin.once("drain", r));
           }
         } else {
           // Pass the destination stream directly to your bulk printer
-          printDocsInBulk([doc], options, chalk, destination);
+          if (isFirst) {
+            destination.write("[" + "\n".repeat(NEWLINE_AMOUNT));
+          }
+
+          const output = formatDocument(doc, chalk, options.whiteSpace, {
+            isLastInArray: false,
+            isArrayElement: true,
+          });
+
+          // Back-pressure check for the pager
+          const canWrite = destination.write(output);
+          if (!canWrite && !failedToStartPager) {
+            await new Promise((r) => destination.once("drain", r));
+          }
+
+          isFirst = false;
         }
       }
+    }
+    if (!isFirst) {
+      // Don't print if no documents have been printed yet
+      destination.write("]");
     }
 
     // 5. WAIT FOR USER
