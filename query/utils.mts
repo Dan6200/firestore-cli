@@ -1,79 +1,45 @@
 import { CollectionReference, Filter, Query } from "@google-cloud/firestore";
 import { Condition, WhereClause, WhereCondition } from "commander";
 
+function isFilter(obj: any): obj is Filter {
+  if (!obj || typeof obj !== "object") return false;
+
+  const isFieldFilter = "field" in obj && "operator" in obj && "value" in obj;
+
+  const isCompositeFilter =
+    "filters" in obj && Array.isArray(obj.filters) && "operator" in obj;
+
+  return isFieldFilter || isCompositeFilter;
+}
+
 export default function handleWhereClause(
   ref: CollectionReference | Query,
   where: Condition,
 ) {
   if (!where || !where.length) return ref;
-  const result = evalCondition(ref, where);
-  if (!(result instanceof Query))
-    throw new Error("Final result must be a Query Object");
-  ref = result;
+  const result = evalCondition(where);
+  if (!isFilter(result))
+    throw new Error("Final result must be a Filter Object");
+  ref = ref.where(result);
   return ref;
 }
 
-function evalCondition(ref: Query, conList: Condition): WhereClause | Query {
-  const conOp: ["or", "and"] = ["or", "and"];
-  if (checkConOp(conList, conOp[0])) {
-    const opIdx = conList.indexOf(conOp[0]);
-    const con = conList.slice(0, opIdx);
-    if (!isWhereClause(con))
-      throw new Error("Invalid where clause: " + JSON.stringify(con));
-    const cond1 = con;
-    const rest = conList.slice(opIdx + 1, conList.length) as Condition;
-    let cond2, cond;
-    if (checkConOp(rest, conOp[0])) cond = evalCondition(ref, rest);
-    else if (checkConOp(rest, conOp[1]))
-      cond = evalCondition(ref, rest) as WhereClause;
-    else cond = rest;
-    if (cond instanceof Query) return cond;
-    if (!isWhereClause(cond)) {
-      throw new Error("Invalid where clause: " + JSON.stringify(cond));
-    }
-    cond2 = cond;
-    return evaluate(ref, cond1, conOp[0].toLowerCase() as "and" | "or", cond2);
+function recursiveDescHelper(conList: Condition, op: "and" | "or") {
+  const opIdx = conList.indexOf(op);
+  const con = conList.slice(0, opIdx);
+  if (!isWhereClause(con))
+    throw new Error("Invalid where clause: " + JSON.stringify(con));
+  const cond1 = evalCondition(con);
+  const rest = conList.slice(opIdx + 1, conList.length) as Condition;
+  let cond2;
+  if (checkConOp(rest, "or")) cond2 = evalCondition(rest);
+  else if (checkConOp(rest, "and")) cond2 = evalCondition(rest) as WhereClause;
+  else cond2 = rest;
+  if (isFilter(cond2)) return evaluate(cond1, "or", cond2);
+  if (!isWhereClause(cond2)) {
+    throw new Error("Invalid where clause: " + JSON.stringify(cond2));
   }
-
-  if (checkConOp(conList, conOp[1])) {
-    const opIdx = conList.indexOf(conOp[1]);
-    const con = conList.slice(0, opIdx);
-    if (!isWhereClause(con))
-      throw new Error("Invalid where clause: " + JSON.stringify(con));
-    const cond1 = con;
-    const rest = conList.slice(opIdx + 1, conList.length) as Condition;
-
-    let cond2, cond;
-    if (checkConOp(rest, conOp[0])) cond = evalCondition(ref, rest);
-    else if (checkConOp(rest, conOp[1]))
-      cond = evalCondition(ref, rest) as WhereClause;
-    else cond = rest;
-    if (!isWhereClause(cond)) {
-      throw new Error("Invalid where clause: " + JSON.stringify(cond));
-    }
-    cond2 = cond;
-    return evaluate(ref, cond1, conOp[1].toLowerCase() as "and" | "or", cond2);
-  }
-  if (!isWhereClause(conList))
-    throw new Error("Invalid where clause: " + JSON.stringify(conList));
-  return ref.where(conList[0], conList[1], conList[2]);
-}
-
-function evaluate(
-  ref: Query,
-  cond1: WhereClause,
-  Op: "and" | "or",
-  cond2: WhereClause,
-) {
-  Op = Op.toLowerCase() as "and" | "or";
-  if (Op !== "and" && Op !== "or")
-    throw new Error("Must be an 'AND' or 'OR' statement");
-  return ref.where(
-    Filter[Op](
-      Filter.where(cond1[0], cond1[1], cond1[2]),
-      Filter.where(cond2[0], cond2[1], cond2[2]),
-    ),
-  );
+  return evaluate(cond1, op, cond2);
 }
 
 /*
@@ -88,6 +54,52 @@ function evaluate(
  * 		return eval(cond1, conOp, cond2)
  * 	return conList
  */
+
+function evalCondition(conList: Condition): WhereClause | Filter {
+  const conOp: ["or", "and"] = ["or", "and"];
+  if (conList.length > 3) {
+    if (!conOp.includes(conList[3])) {
+      conList.splice(3, 0, "and");
+    }
+  }
+  if (checkConOp(conList, "or")) {
+    return recursiveDescHelper(conList, "or");
+  }
+
+  if (checkConOp(conList, "and")) {
+    return recursiveDescHelper(conList, "and");
+  }
+
+  if (!isWhereClause(conList))
+    throw new Error("Invalid where clause: " + JSON.stringify(conList));
+  return Filter.where(conList[0], conList[1], conList[2]);
+}
+
+function evaluate(
+  cond1: WhereClause | Filter,
+  Op: "and" | "or",
+  cond2: WhereClause | Filter,
+) {
+  Op = Op.toLowerCase() as "and" | "or";
+  if (Op !== "and" && Op !== "or")
+    throw new Error("Must be an 'AND' or 'OR' statement");
+  let expression = null;
+  if (isFilter(cond1) && isFilter(cond2)) {
+    expression = Filter[Op](cond1, cond2);
+  } else if (isFilter(cond1) && isWhereClause(cond2)) {
+    expression = Filter[Op](cond1, Filter.where(cond2[0], cond2[1], cond2[2]));
+  } else if (isWhereClause(cond1) && isFilter(cond2)) {
+    expression = Filter[Op](Filter.where(cond1[0], cond1[1], cond1[2]), cond2);
+  } else if (isWhereClause(cond1) && isWhereClause(cond2)) {
+    expression = Filter[Op](
+      Filter.where(cond1[0], cond1[1], cond1[2]),
+      Filter.where(cond2[0], cond2[1], cond2[2]),
+    );
+  } else {
+    throw new Error("Invalid Where expression.");
+  }
+  return expression;
+}
 
 function isValidWhereCondition(condition: any): condition is WhereCondition {
   return [
@@ -108,6 +120,7 @@ const isWhereClause = (clause: unknown): clause is WhereClause =>
   !!clause &&
   Array.isArray(clause) &&
   typeof clause[0] === "string" &&
+  clause[2] !== undefined &&
   isValidWhereCondition(clause[1]);
 
 const checkConOp = (conList: Condition, conOp: "and" | "or") =>
