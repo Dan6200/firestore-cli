@@ -10,7 +10,10 @@ import { AsyncGate } from "../async-gate.mjs";
 
 export async function workerPool(
   queue: BlockingQueue<CollectionReference | DocumentReference>,
-  callback: (ref: DocumentReference, signal?: AbortSignal) => WriteResult,
+  callback: (
+    ref: DocumentReference,
+    signal?: AbortSignal,
+  ) => Promise<WriteResult>,
   errCallback?: (reason: string, error?: Error) => void,
   logger?: (message: string, level?: "info" | "error" | "debug") => void,
   options: {
@@ -57,8 +60,7 @@ export async function workerPool(
                 queue.enqueue(sub);
               }
             }
-            // await callback(ref, signal);
-            callback(ref, signal); // <-- Bulkwriter/BatchWriter is synchronous
+            await callback(ref, signal);
           }
         })
         .catch((error) => {
