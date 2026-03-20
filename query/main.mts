@@ -3,7 +3,7 @@ import { Options } from "commander";
 import { authenticateFirestore } from "../auth/authenticate-firestore.mjs";
 import { CLI_LOG } from "../utils/logging.mjs";
 import { getCollectionReference } from "../utils/get-firestore-reference.mjs";
-import handleWhereClause from "./utils.mjs";
+import handleWhereClause from "./utils/where-clause-parsing.mjs";
 import { initializePager } from "../pager/init.mjs";
 
 export default async (collection: string, options: Options) => {
@@ -16,8 +16,31 @@ export default async (collection: string, options: Options) => {
 
     spinner.start("Querying documents...");
     const ref = getCollectionReference(db, collection);
-    const q = handleWhereClause(ref, options.where);
-    const docs = await q.get();
+    let query = handleWhereClause(ref, options.where);
+    // 1. Order By (Must come before cursors)
+    if (options.asc) {
+      for (const a of options.asc) {
+        query = query.orderBy(a, "asc");
+      }
+    }
+    if (options.desc) {
+      for (const d of options.desc) {
+        query = query.orderBy(d, "desc");
+      }
+    }
+
+    // 2. Cursors
+    if (options.startAfter) query = query.startAfter(...options.startAfter);
+    if (options.startAt) query = query.startAt(...options.startAt);
+    if (options.endAt) query = query.endAt(...options.endAt);
+    if (options.startAfter) query = query.startAfter(...options.startAfter);
+    if (options.endBefore) query = query.endBefore(...options.endBefore);
+
+    // 3. Limit
+    if (options.limit) query = query.limit(options.limit);
+
+    // Make Query...
+    const docs = await query.get();
     spinner.succeed(`Found ${docs.size} document(s).`);
 
     if (docs.empty) return;
