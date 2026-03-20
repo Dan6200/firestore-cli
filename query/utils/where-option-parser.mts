@@ -24,15 +24,13 @@ export default (arg: string, prevArgs: any[] = []): any[] => {
       }
     }
 
-    // Fallback: CSV parsing (The High-DX path)
+    // Fallback: CSV parsing
     parsedValue = arg
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
     return prevArgs.concat([parsedValue]);
   }
-
-  // --- 2. HANDLE SCALAR VALUES (Booleans, Numbers, Strings) ---
 
   // Boolean Check
   if (arg.toLowerCase() === "true") return prevArgs.concat([true]);
