@@ -12,6 +12,10 @@ import { formatDocument } from "../../utils/print/format-document.mjs";
 import { printJSON } from "../../utils/print/json.mjs";
 import { printDocsInBulk } from "./print-docs-in-bulk.mjs";
 import { initializePager } from "../../pager/init.mjs";
+import {
+  isDocSnapshot,
+  isQuerySnapshot,
+} from "../../utils/firestore/type-guards.mjs";
 
 export async function handleSnapshotGet(
   ref: DocumentReference | Query,
@@ -46,7 +50,7 @@ export async function handleSnapshotGet(
     if (options.json) {
       destination.write(printJSON(snapshot, options));
     } else {
-      if (snapshot instanceof DocumentSnapshot) {
+      if (isDocSnapshot(snapshot)) {
         if (snapshot.exists) {
           destination.write(
             formatDocument(snapshot, chalk, options.whiteSpace, {
@@ -56,7 +60,7 @@ export async function handleSnapshotGet(
         } else {
           destination.write(chalk.yellow("Document does not exist."));
         }
-      } else if (snapshot instanceof QuerySnapshot) {
+      } else if (isQuerySnapshot(snapshot)) {
         if (snapshot.empty) {
           destination.write("[]");
         } else {
