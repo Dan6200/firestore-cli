@@ -3,9 +3,10 @@ import set from "./set.mjs";
 import get from "./get/main.mjs";
 import query from "./query/main.mjs";
 import deleteDoc from "./delete/main.mjs";
-import whereOptionParser from "./utils/where-option-parser.mjs";
 import { CLI_LOG } from "./utils/logging.mjs";
 import { readFileSync } from "fs";
+import cursorOptionParser from "./query/utils/cursor-option-parser.mjs";
+import whereOptionParser from "./query/utils/where-option-parser.mjs";
 
 const packageJson = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
@@ -76,42 +77,50 @@ try {
       "Specify filtering conditions for querying documents. Provide a space-separated list of arguments in the format:\n`<field> <operator> <value>`. Supported operators include: `==`, `!=`, `<`, `<=`, `>`, `>=`, `array-contains`,\n`array-contains-any`, `in`, and `not-in`. If specifying a numeric value as a string, enclose it in nested quotes.\nExample: `-w id '==' '\"22\"' and age '>' 18  or status '==' active`. When using query modifiers, such as --where, --asc, --start, --limit... order matters, learn more: https://firebase.google.com/docs/firestore/query-data/get-data",
       whereOptionParser,
     )
-    // TODO: complete....
     .option(
-      "-a, --asc <field>",
+      "-a, --asc <FIELDS...>",
       "Order results in an ascending order. To be implemented soon.",
+      cursorOptionParser,
     )
     .option(
-      "-d, --desc <field>",
+      "-d, --desc <FIELDS...>",
       "Order results in an descending order. To be implemented soon.",
+      cursorOptionParser,
     )
     .option(
-      "-s, --start <VALUES...>",
+      "-s, --startAt <VALUES...>",
       "Place cursor at a list of values.\nEach value must correspond to the number of --asc/--desc flags used.\nExample: `-w id '==' 'AyuiI9=' -a age -a number_of_hobbies -s 18 2`. To be implemented soon.",
+      cursorOptionParser,
     )
     .option(
-      "-e, --end <VALUES...>",
-      "Place ending cursor at a list of values. See --start. To be implemented soon.",
+      "-e, --endAt <VALUES...>",
+      "Place ending cursor at a list of values. See --startAt. To be implemented soon.",
+      cursorOptionParser,
     )
     .option(
       "-sb, --start-before <VALUES...>",
       "Place cursor before a list of values. See --start. To be implemented soon.",
+      cursorOptionParser,
     )
     .option(
       "-eb, --end-before <VALUES...>",
       "Place ending cursor before a list of values. See --start",
+      cursorOptionParser,
     )
     .option(
       "-sa, --start-after <VALUES...>",
       "Place cursor after a list of values. See --start. To be implemented soon.",
+      cursorOptionParser,
     )
     .option(
       "-ea, --end-after <VALUES...>",
       "Place ending cursor after a list of values. See --start. To be implemented soon.",
+      cursorOptionParser,
     )
     .option(
       "-l, --limit <VALUE>",
       "Limit results to `VALUE` count documents. To be implemented soon.",
+      parseInt,
     )
     .option("-np, --no-pager", "The option to print results without a pager.")
     .option(
