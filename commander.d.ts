@@ -32,9 +32,9 @@ declare module "commander" {
     endBefore?: number[];
     limit?: number;
   }
-  type WhereClause = [string, WhereCondition, any];
+  type WhereClause = [string, WhereOperator, any];
   type OrClause = ["or" | "OR", ...WhereClause];
-  type WhereCondition =
+  type WhereOperator =
     | "=="
     | ">"
     | ">="
