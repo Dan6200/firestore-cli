@@ -11,12 +11,12 @@ export function isCollection(ref: any): ref is CollectionReference {
 
 /** Checks if the object has a .data() method and an .id property */
 export function isDocSnapshot(
-  snop: any,
-): snop is DocumentSnapshot | QueryDocumentSnapshot {
-  return snop && typeof snop.data === "function" && "id" in snop;
+  snap: any,
+): snap is DocumentSnapshot | QueryDocumentSnapshot {
+  return snap && typeof snap.data === "function" && "id" in snap;
 }
 
 /** Checks if it's a QuerySnapshot (has .docs and .forEach) */
-export function isQuerySnapshot(snop: any): snop is QuerySnapshot {
-  return snop && typeof snop.forEach === "function" && Array.isArray(snop.docs);
+export function isQuerySnapshot(snap: any): snap is QuerySnapshot {
+  return snap && typeof snap.forEach === "function" && Array.isArray(snap.docs);
 }
