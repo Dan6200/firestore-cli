@@ -1,5 +1,5 @@
 import { CollectionReference, Filter, Query } from "@google-cloud/firestore";
-import { Condition, WhereClause, WhereCondition } from "commander";
+import { Condition, WhereClause, WhereOperator } from "commander";
 
 function isFilter(obj: any): obj is Filter {
   if (!obj || typeof obj !== "object") return false;
@@ -35,10 +35,6 @@ function recursiveDescHelper(conList: Condition, op: "and" | "or") {
   if (checkConOp(rest, "or")) cond2 = evalCondition(rest);
   else if (checkConOp(rest, "and")) cond2 = evalCondition(rest) as WhereClause;
   else cond2 = rest;
-  if (isFilter(cond2)) return evaluate(cond1, "or", cond2);
-  if (!isWhereClause(cond2)) {
-    throw new Error("Invalid where clause: " + JSON.stringify(cond2));
-  }
   return evaluate(cond1, op, cond2);
 }
 
@@ -101,7 +97,7 @@ function evaluate(
   return expression;
 }
 
-function isValidWhereCondition(condition: any): condition is WhereCondition {
+function isValidWhereOperator(condition: any): condition is WhereOperator {
   return [
     "==",
     ">",
@@ -121,7 +117,7 @@ const isWhereClause = (clause: unknown): clause is WhereClause =>
   Array.isArray(clause) &&
   typeof clause[0] === "string" &&
   clause[2] !== undefined &&
-  isValidWhereCondition(clause[1]);
+  isValidWhereOperator(clause[1]);
 
 const checkConOp = (conList: Condition, conOp: "and" | "or") =>
   conList.includes(conOp.toLowerCase()) ||
