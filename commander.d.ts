@@ -1,7 +1,10 @@
+import { FieldPath } from "@google-cloud/firestore";
 import { Command } from "commander";
 
 declare module "commander" {
   interface Options {
+    end: any;
+    start: any;
     debug?: boolean;
     serviceAccountKey?: string;
     databaseId?: string;
@@ -20,6 +23,14 @@ declare module "commander" {
     rateLimit?: number;
     jsonl?: boolean;
     recurse?: boolean;
+    asc?: string[];
+    desc?: string[];
+    startAfter?: number[];
+    startAt?: number[];
+    endAt?: number[];
+    startBefore?: number[];
+    endBefore?: number[];
+    limit?: number;
   }
   type WhereClause = [string, WhereCondition, any];
   type OrClause = ["or" | "OR", ...WhereClause];
