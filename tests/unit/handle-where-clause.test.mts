@@ -38,7 +38,9 @@ jest.unstable_mockModule("@google-cloud/firestore", () => ({
   },
 }));
 const { Filter } = await import("@google-cloud/firestore");
-const { default: handleWhereClause } = await import("../../query/utils.mjs");
+const { default: handleWhereClause } = await import(
+  "../../query/utils/where-clause-parsing.mjs"
+);
 
 describe("handleWhereClause", () => {
   let mockRef: any;
@@ -110,6 +112,7 @@ describe("handleWhereClause", () => {
       "category",
       "==",
       "tech",
+      "or",
       "price",
       "<",
       100,
@@ -257,6 +260,34 @@ describe("handleWhereClause", () => {
     const andArgs = (mockAnd as jest.Mock).mock.calls[0];
     // .flat() in the mock ensures these are the two FieldFilters
     expect(andArgs.length).toBe(2);
+  });
+
+  it("should reduce AND to a Filter and use it as an operand for OR", () => {
+    const clauses = [
+      "active",
+      "==",
+      true,
+      "role",
+      "==",
+      "admin",
+      "or",
+      "tier",
+      "==",
+      "gold",
+    ];
+
+    handleWhereClause(mockRef, clauses as any);
+
+    // Updated from 'f' to 'field'
+    expect(mockAnd).toHaveBeenCalledWith(
+      expect.objectContaining({ field: "active" }),
+      expect.objectContaining({ field: "role" }),
+    );
+
+    expect(mockOr).toHaveBeenCalled();
+    expect(mockRef.where).toHaveBeenLastCalledWith(
+      expect.objectContaining({ operator: "OR" }),
+    );
   });
 
   it("should reduce AND to a Filter and use it as an operand for OR", () => {
