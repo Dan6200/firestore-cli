@@ -87,25 +87,30 @@ export async function handleGetFromInput(
       }
     } else {
       const docRefs = paths.filter(Boolean).map((p) => db.doc(p));
-      const snapshot = await db.getAll(...docRefs);
-      if (options.json) {
-        destination.write(printJSON(snapshot, options));
-      } else {
-        if (isDocSnapshot(snapshot)) {
-          if (snapshot.exists) {
-            destination.write(
-              formatDocument(snapshot, chalk, options.whiteSpace, {
-                isArrayElement: false,
-              }),
-            );
-          } else {
-            destination.write(chalk.yellow("Document does not exist."));
-          }
-        } else if (isQuerySnapshot(snapshot)) {
-          if (snapshot.empty) {
-            destination.write("[]");
-          } else {
-            printDocsInBulk(snapshot.docs, options, chalk, destination);
+      const snapshots: (
+        | FirebaseFirestore.DocumentSnapshot
+        | FirebaseFirestore.QuerySnapshot
+      )[] = await db.getAll(...docRefs);
+      for (const snapshot of snapshots) {
+        if (options.json) {
+          destination.write(printJSON(snapshot, options));
+        } else {
+          if (isDocSnapshot(snapshot)) {
+            if (snapshot.exists) {
+              destination.write(
+                formatDocument(snapshot, chalk, options.whiteSpace, {
+                  isArrayElement: false,
+                }),
+              );
+            } else {
+              destination.write(chalk.yellow("Document does not exist."));
+            }
+          } else if (isQuerySnapshot(snapshot)) {
+            if (snapshot.empty) {
+              destination.write("[]");
+            } else {
+              printDocsInBulk(snapshot.docs, options, chalk, destination);
+            }
           }
         }
       }
