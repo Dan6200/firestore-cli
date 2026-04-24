@@ -6,7 +6,7 @@ A lightweight, powerful command-line interface for interacting with Google Fires
 
 ---
 
-**What’s New in v1.1.2 🚀**
+**What’s New in v1.1.8 🚀**
 
 This update represents a total overhaul of the core engine, shifting from basic sequential operations to a **High-Concurrency Data Pipeline**.
 
