@@ -158,6 +158,10 @@ try {
     .option("-j, --json", "Format output in JSON format")
     .option("-np, --no-pager", "The option to print results without a pager.")
     .option(
+      "-fp, --full-path",
+      "Print full paths to firestore documents instead of just document IDs",
+    )
+    .option(
       "--pager <VALUE>",
       "Customizes which pager should be used to read output. The default is 'less'",
       "less",

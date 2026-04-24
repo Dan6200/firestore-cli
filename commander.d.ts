@@ -31,6 +31,7 @@ declare module "commander" {
     startBefore?: number[];
     endBefore?: number[];
     limit?: number;
+    fullPath?: boolean;
   }
   type WhereClause = [string, WhereOperator, any];
   type OrClause = ["or" | "OR", ...WhereClause];
