@@ -12,9 +12,8 @@ This update represents a total overhaul of the core engine, shifting from basic 
 
 ## **🏗 High-Performance Core**
 
-- **Custom Concurrency Suite:** Introduced BlockingQueue and AsyncGate for precise task orchestration, replacing naive Promise.all patterns.
+- **Custom Concurrency Suite:** Introduced BlockingQueue and AsyncGate for precise task orchestration.
 - **Dual-Phase Worker Pool:** Separated "Discovery" (recursive crawling) from "Execution" (writes/deletes) to maximize throughput.
-- **Network Batching:** The get command now uses db.getAll(), collapsing $N$ round-trips into a single batch request for massive speed gains.
 - **Stream-to-Pager:** Integrated less with automatic **drain event handling**. The CLI now pauses data fetching when you stop scrolling to prevent terminal overflow and OOM crashes.
 
 ## **⚡ Query & Logic Power**
@@ -30,7 +29,6 @@ This update represents a total overhaul of the core engine, shifting from basic 
 - **TTY Handoff:** Spinners and progress bars now gracefully terminate before the pager takes over, preventing UI glitches and cursor "fighting."
 - **Path Metadata Control:**
   - \-fp (Full Path): Injects the document's absolute path into the JSON—essential for piping results back into set or delete.
-  - \-np (No Path): Strips metadata for clean, data-only exports.
 
 ---
 
