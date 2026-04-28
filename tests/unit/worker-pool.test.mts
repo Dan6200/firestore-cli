@@ -145,52 +145,41 @@ describe("Worker Pool Engine", () => {
 
     expect(mockErrCallback).toHaveBeenCalledWith(
       "Unexpected Error",
+      expect.objectContaining(mockCol),
       expect.objectContaining({
         message: "Collection Path provided without --recurse",
       }),
     );
   });
 
-  it("should trigger abort signal on timeout", async () => {
-    // 1. Arrange: Create a callback that waits longer than the timeout
-    // We use a slightly longer delay than the timeout (100ms vs 150ms)
-    mockCallback.mockImplementation(async (_, signal: AbortSignal) => {
-      return new Promise((resolve, _) => {
-        const timer = setTimeout(() => {
-          // If the signal aborted as expected, we resolve "successfully"
-          // for the test to inspect the state.
-          resolve({} as any);
-        }, 150);
-
-        // Listen for the abort event to resolve/reject earlier if needed
-        signal?.addEventListener("abort", () => {
-          clearTimeout(timer);
-          resolve({} as any);
+  it("should trigger abort signal on slow DISCOVERY", async () => {
+    // 1. Arrange: A slow discoverer that actually gets awaited
+    const slowDiscoverer = jest.fn(
+      async (_: never, __: never, signal: AbortSignal) => {
+        return new Promise<void>((resolve) => {
+          // If signal aborts, we resolve
+          signal.addEventListener("abort", () => resolve(null));
+          // Otherwise we'd wait 200ms
+          setTimeout(resolve, 200);
         });
-      });
-    });
+      },
+    );
 
-    const mockDoc = {
-      type: "document",
-      path: "slow/doc",
-      listCollections: jest
-        .fn<() => Promise<Array<string>>>()
-        .mockResolvedValue([]),
+    const mockCol = {
+      type: "collection",
+      path: "slow/collection",
     };
-    await queue.enqueue(mockDoc);
+    await queue.enqueue(mockCol);
 
-    // 2. Act: Set a short timeout of 50ms
-    const timeout = 50;
+    // 2. Act: Set short timeout
     await workerPool(queue, mockCallback as any, null, null, {
-      recursive: false,
-      timeout,
+      recursive: true, // Trigger the discoverer path
+      discoverer: slowDiscoverer as any,
+      timeout: 50,
     });
 
-    // 3. Assert: Check the signal state in the last call
-    const lastCallArgs = mockCallback.mock.calls[0];
-    const signal = lastCallArgs[1] as AbortSignal;
-
-    expect(signal).toBeDefined();
-    expect(signal.aborted).toBe(true); // This is the crucial check
+    // 3. Assert: The discoverer's signal should have aborted
+    const signal = slowDiscoverer.mock.calls[0][2];
+    expect(signal.aborted).toBe(true);
   });
 });

@@ -14,7 +14,11 @@ export async function workerPool(
     ref: DocumentReference,
     signal?: AbortSignal,
   ) => Promise<WriteResult>,
-  errCallback?: (reason: string, error?: Error) => void,
+  errCallback?: (
+    reason: string,
+    ref: CollectionReference | DocumentReference,
+    error?: Error,
+  ) => void,
   logger?: (message: string, level?: "info" | "error" | "debug") => void,
   options: {
     recursive?: boolean;
@@ -35,7 +39,7 @@ export async function workerPool(
 
   try {
     while (true) {
-      const ref = await queue.dequeue();
+      const ref = await queue.dequeue(); // Gets stuck here...
 
       if (activeTasks.size >= 100) {
         await Promise.race(activeTasks);
@@ -47,9 +51,14 @@ export async function workerPool(
       const task = gate
         .run(async () => {
           timer = setTimeout(() => controller.abort(), timeout);
+
           if (isCollection(ref)) {
             if (recursive) {
-              await discoverer?.(queue, ref, signal);
+              if (!discoverer)
+                throw new Error(
+                  "Must provide discoverer helper for recursive traversals",
+                );
+              await discoverer(queue, ref, signal);
             } else {
               throw new Error("Collection Path provided without --recurse");
             }
@@ -60,7 +69,7 @@ export async function workerPool(
                 queue.enqueue(sub);
               }
             }
-            await callback(ref, signal);
+            callback(ref, signal); // <-- DON'T await...
           }
         })
         .catch((error) => {
@@ -68,42 +77,47 @@ export async function workerPool(
           if (signal.aborted) {
             if (errCallback) {
               reason = `Task timed out for: ${ref.path}`;
-              errCallback(reason);
+              errCallback(reason, ref);
             } else {
-              console.error(reason);
+              logger?.(error, "error");
             }
+          } else if (error.toString().match(/Queue closed/)) {
+            throw error;
           } else {
             reason = "Unexpected Error";
             if (errCallback) {
-              errCallback(reason, error);
+              errCallback(reason, ref, error);
             } else {
-              console.log(reason);
-              console.error(error);
+              logger?.(reason, "info");
+              logger?.(error, "error");
             }
           }
         })
-        .finally(() => {
+        .finally(async () => {
           clearTimeout(timer);
           activeTasks.delete(task);
-
           if (queue.size === 0 && activeTasks.size === 0) {
             queue.close();
           }
+          logger?.("ref: " + (ref ? ref.path : "null"), "debug");
         });
 
+      logger?.(`Active tasks: ${activeTasks.size.toString()}`, "debug");
       activeTasks.add(task);
-      logger?.(queue.getStatus());
+      logger?.(queue.getStatus(), "debug");
+      logger?.(`Deleting ${queue.size.toString()} document(s)...`, "info");
     }
   } catch (err: any) {
-    if (!err.message.match(/Queue closed:/)) {
+    if (!err.toString().match(/Queue closed/)) {
       const reason = `Unexpected Error`;
       if (errCallback) {
-        errCallback(reason, err);
+        errCallback(reason, null, err);
       } else {
-        console.log(reason);
-        console.error(err);
+        logger?.(reason, "info");
+        logger?.(err, "error");
       }
     }
+  } finally {
+    await Promise.allSettled(activeTasks);
   }
-  await Promise.allSettled(activeTasks);
 }
