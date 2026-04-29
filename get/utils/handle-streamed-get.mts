@@ -52,7 +52,14 @@ export async function handleStreamedGet(
     }
 
     destination.write("]");
-
+  } catch (err: any) {
+    if (!failedToStartPager) {
+      destination.write("] -- Stream Interrupted. Press q to exit Pager.");
+      pager.stdin.end();
+    }
+    CLI_LOG(err.message.replace(/\d+ /, ""), "error");
+    process.exitCode = 1;
+  } finally {
     // 6. Finalize Pager
     if (!failedToStartPager) {
       pager.stdin.end();
@@ -60,12 +67,9 @@ export async function handleStreamedGet(
         pager.on("close", resolve);
       });
     }
-  } catch (err: any) {
-    if (!failedToStartPager) {
-      destination.write("] // Stream Interrupted");
-      pager.stdin.end();
-    }
-    CLI_LOG(err.message, "error");
-    process.exitCode = 1;
+    process.stdout.write("", () => {
+      process.exit(process.exitCode || 0);
+    });
+    process.stdout.end();
   }
 }

@@ -26,61 +26,52 @@ export async function handleSnapshotGet(
   let pagerInstance: any = null;
   let failedToStartPager = false;
 
-  try {
-    spinner.text = "Fetching snapshot from Firestore...";
-    const snapshot = await ref.get();
+  spinner.text = "Fetching snapshot from Firestore...";
+  const snapshot = await ref.get();
 
-    const successMsg = failedToStartPager ? "Done!" : "Done! Piping to pager.";
-    spinner.succeed(chalk.green(successMsg));
+  const successMsg = failedToStartPager ? "Done!" : "Done! Piping to pager.";
+  spinner.succeed(chalk.green(successMsg));
 
-    const pagerData = initializePager(options);
-    pagerInstance = pagerData.pager;
-    failedToStartPager = pagerData.failedToStartPager;
+  const pagerData = initializePager(options);
+  pagerInstance = pagerData.pager;
+  failedToStartPager = pagerData.failedToStartPager;
 
-    const destination = failedToStartPager
-      ? process.stdout
-      : pagerInstance.stdin;
+  const destination = failedToStartPager ? process.stdout : pagerInstance.stdin;
 
-    // Handle EPIPE
-    destination.on("error", (err: NodeJS.ErrnoException) => {
-      if (err.code === "EPIPE") process.exit(0);
-    });
+  // Handle EPIPE
+  destination.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EPIPE") process.exit(0);
+  });
 
-    // 4. DATA PROCESSING
-    if (options.json) {
-      destination.write(printJSON(snapshot, options));
-    } else {
-      if (isDocSnapshot(snapshot)) {
-        if (snapshot.exists) {
-          destination.write(
-            formatDocument(snapshot, chalk, options.whiteSpace, {
-              isArrayElement: false,
-            }),
-          );
-        } else {
-          destination.write(chalk.yellow("Document does not exist."));
-        }
-      } else if (isQuerySnapshot(snapshot)) {
-        if (snapshot.empty) {
-          destination.write("[]");
-        } else {
-          printDocsInBulk(snapshot.docs, options, chalk, destination);
-        }
+  // 4. DATA PROCESSING
+  if (options.json) {
+    destination.write(printJSON(snapshot, options));
+  } else {
+    if (isDocSnapshot(snapshot)) {
+      if (snapshot.exists) {
+        destination.write(
+          formatDocument(snapshot, chalk, options.whiteSpace, {
+            isArrayElement: false,
+          }),
+        );
+      } else {
+        destination.write(chalk.yellow("Document does not exist."));
+      }
+    } else if (isQuerySnapshot(snapshot)) {
+      if (snapshot.empty) {
+        destination.write("[]");
+      } else {
+        printDocsInBulk(snapshot.docs, options, chalk, destination);
       }
     }
+  }
 
-    // 5. CLEANUP & HANDOFF
-    if (!failedToStartPager) {
-      pagerInstance.stdin.end();
-      // Wait for pager to close so the process doesn't exit prematurely
-      await new Promise<void>((resolve) => {
-        pagerInstance.on("close", resolve);
-      });
-    }
-  } catch (e) {
-    CLI_LOG(e, "error");
-    error = true;
-  } finally {
-    if (error) process.exitCode = 1;
+  // 5. CLEANUP & HANDOFF
+  if (!failedToStartPager) {
+    pagerInstance.stdin.end();
+    // Wait for pager to close so the process doesn't exit prematurely
+    await new Promise<void>((resolve) => {
+      pagerInstance.on("close", resolve);
+    });
   }
 }

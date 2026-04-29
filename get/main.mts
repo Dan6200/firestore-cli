@@ -64,7 +64,7 @@ export default async (path: string, options: Options) => {
     }
   } catch (error) {
     if (spinner) spinner.fail("An unexpected error occurred.");
-    CLI_LOG(error.toString(), "error");
+    CLI_LOG(error.message.replace(/(\d+|Error) /, ""), "error");
     process.exitCode = 1;
     return;
   } finally {

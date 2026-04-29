@@ -18,7 +18,7 @@ export async function handleGetFromInput(
   options: Options,
   spinner: Ora,
 ) {
-  let error = false;
+  let errorOccurs = false;
   let pagerInstance: any = null;
   let failedToStartPager = false;
 
@@ -40,9 +40,9 @@ export async function handleGetFromInput(
       : pagerInstance.stdin;
 
     // Handle EPIPE (e.g., user closes 'less' while we are still writing)
-    destination.on("error", (err: NodeJS.ErrnoException) => {
-      if (err.code === "EPIPE") process.exit(0);
-    });
+    // destination.on("error", (err: NodeJS.ErrnoException) => {
+    //   if (err.code === "EPIPE") process.exit(0);
+    // });
 
     if (options.stream) {
       let isFirst = true;
@@ -115,20 +115,20 @@ export async function handleGetFromInput(
         }
       }
     }
-
-    // 5. WAIT FOR USER
+  } catch (e) {
+    if (spinner) spinner.fail("An unexpected error occurred.");
+    pagerInstance.stdin.write(
+      "An unexpected error occurred. Press q to exit Pager.",
+    );
+    CLI_LOG(e.message.replace(/(\d+|Error) /, ""), "error");
+    errorOccurs = true;
+  } finally {
+    if (errorOccurs) process.exitCode = 1;
     if (!failedToStartPager) {
       pagerInstance.stdin.end();
       await new Promise<void>((resolve) => {
         pagerInstance.on("close", resolve);
       });
     }
-  } catch (e) {
-    // If the spinner was already stopped by .succeed(), we use CLI_LOG
-    CLI_LOG(e, "error");
-    error = true;
-  } finally {
-    if (error) process.exitCode = 1;
-    // Optional: await db.terminate() here if you experience "hanging" exits
   }
 }
