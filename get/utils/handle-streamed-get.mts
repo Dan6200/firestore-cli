@@ -1,10 +1,15 @@
-import { Query, QueryDocumentSnapshot } from "@google-cloud/firestore";
+import {
+  BulkWriterError,
+  Query,
+  QueryDocumentSnapshot,
+} from "@google-cloud/firestore";
 import chalk from "chalk";
 import { Options } from "commander";
 import { Ora } from "ora";
 import { CLI_LOG } from "../../utils/logging.mjs";
 import { formatDocument } from "../../utils/print/format-document.mjs";
 import { initializePager } from "../../pager/init.mjs";
+import { permissionDeniedError } from "../../utils/error-handling.mjs";
 
 export async function handleStreamedGet(
   ref: Query,
@@ -57,7 +62,9 @@ export async function handleStreamedGet(
       destination.write("] -- Stream Interrupted. Press q to exit Pager.");
       pager.stdin.end();
     }
-    CLI_LOG(err.message.replace(/\d+ /, ""), "error");
+    if ((err as BulkWriterError).code === 7) {
+      permissionDeniedError(err);
+    } else CLI_LOG(err.message.replace(/(\d+|Error) /, ""), "error");
     process.exitCode = 1;
   } finally {
     // 6. Finalize Pager

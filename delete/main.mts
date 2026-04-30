@@ -6,13 +6,16 @@ import { authenticateFirestore } from "../auth/authenticate-firestore.mjs";
 import { readFile } from "fs/promises";
 import { resolve } from "path";
 import { existsSync } from "fs";
-import { getDocumentReference } from "../utils/get-firestore-reference.mjs";
+import { getFirestoreReference } from "../utils/get-firestore-reference.mjs";
 import { BlockingQueue } from "../utils/algorithms/blocking-queues.js";
 import {
+  BulkWriterError,
   CollectionReference,
   DocumentReference,
 } from "@google-cloud/firestore";
 import { workerPool } from "../utils/worker-pool/main.mjs";
+import { discoverPaths } from "../utils/firestore/path-discoverer.mjs";
+import { permissionDeniedError } from "../utils/error-handling.mjs";
 
 // Helper function to read from stdin
 function readStdin(): Promise<string> {
@@ -24,9 +27,11 @@ function readStdin(): Promise<string> {
 }
 
 export default async (path: string, options: Options) => {
-  const spinner = ora("Deleting document(s)...").start();
+  const spinner = ora("Authenticating...").start();
   try {
     const db = await authenticateFirestore(options);
+    spinner.succeed("Authentication successful.");
+    spinner.start("Initializing deletion...");
     let docsToDelete: BlockingQueue<CollectionReference | DocumentReference>;
 
     // 1. Check stdin
@@ -38,7 +43,7 @@ export default async (path: string, options: Options) => {
           initialItems: stdinData
             .split("\n")
             .filter((p) => p.trim())
-            .map((p) => getDocumentReference(db, p)),
+            .map((p) => getFirestoreReference(db, p)),
         });
       }
     }
@@ -57,14 +62,17 @@ export default async (path: string, options: Options) => {
           initialItems: fileContent
             .split("\n")
             .filter((p) => p.trim())
-            .map((p) => getDocumentReference(db, p)),
+            .map((p) => getFirestoreReference(db, p)),
         });
       }
     }
     // 3. Fallback to path argument
     else {
       if (path) {
-        docsToDelete.enqueue(getDocumentReference(db, path));
+        docsToDelete = new BlockingQueue({
+          initialItems: [getFirestoreReference(db, path)],
+        });
+        // console.log(docsToDelete);
       } else {
         throw new Error(
           "A document path or file is required when not reading from stdin.",
@@ -77,8 +85,6 @@ export default async (path: string, options: Options) => {
       return;
     }
 
-    spinner.text = `Deleting ${docsToDelete.size} document(s)...`;
-
     const bulkWriterOptions: {
       throttling?: { maxOpsPerSecond: number };
     } = {};
@@ -89,19 +95,56 @@ export default async (path: string, options: Options) => {
     }
     const bulkWriter = db.bulkWriter(bulkWriterOptions);
 
+    let deletedCount = 0;
+    bulkWriter.onWriteResult(() => {
+      deletedCount++;
+      spinner.text = `Processing deletions: ${deletedCount}`;
+    });
+
+    bulkWriter.onWriteError((error) => {
+      if (error.code === 4) {
+        // 4 is DEADLINE_EXCEEDED
+        CLI_LOG(
+          `Deadline exceeded for ${error.documentRef.path}. Retrying...`,
+          "warn",
+        );
+        return true; // Return true to retry the operation
+      }
+      return false; // Fail for other errors
+    });
+
+    let deleteFailed = false;
+
     await workerPool(
       docsToDelete,
       (ref) => bulkWriter.delete(ref),
-      null,
-      null,
-      { recursive: options.recurse },
+      (ref, error) => {
+        if ((error as BulkWriterError).code === 7) {
+          permissionDeniedError(error);
+        }
+        deleteFailed = true;
+        if (ref instanceof DocumentReference)
+          spinner.fail(`Failed to delete document: ${ref.path}`);
+        spinner.fail(`Failed to delete collection: ${ref.path}`);
+      },
+      (text, level) =>
+        level === "info"
+          ? (spinner.text = `${text}\n`)
+          : level !== "debug"
+            ? CLI_LOG(text, level)
+            : options.debug
+              ? CLI_LOG(text, level)
+              : false,
+      {
+        recursive: options.recurse,
+        discoverer: (queue, ref, signal) => discoverPaths(queue, ref, signal),
+      },
     );
 
     await bulkWriter.close();
 
-    // spinner.succeed(
-    //   `Successfully deleted ${docsToDelete.length} document(s).`,
-    // );
+    !deleteFailed &&
+      spinner.succeed(`Successfully deleted ${deletedCount} document(s).`);
   } catch (e) {
     spinner.fail("Failed to delete document(s)!");
     CLI_LOG(e.message, "error");

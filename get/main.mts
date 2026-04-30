@@ -1,7 +1,7 @@
 //cspell:disable
 import ora, { Ora } from "ora";
 import { Options } from "commander";
-import { DocumentReference } from "@google-cloud/firestore";
+import { BulkWriterError, DocumentReference } from "@google-cloud/firestore";
 import { CLI_LOG } from "../utils/logging.mjs";
 import { authenticateFirestore } from "../auth/authenticate-firestore.mjs";
 import { getFirestoreReference } from "../utils/get-firestore-reference.mjs";
@@ -12,6 +12,7 @@ import { readStdin } from "./utils/read-stdin.mjs";
 import { handleGetFromInput } from "./utils/handle-input-get.mjs";
 import { handleStreamedGet } from "./utils/handle-streamed-get.mjs";
 import { handleSnapshotGet } from "./utils/handle-snapshot-get.mjs";
+import { permissionDeniedError } from "../utils/error-handling.mjs";
 
 export default async (path: string, options: Options) => {
   let spinner: Ora = null;
@@ -64,7 +65,9 @@ export default async (path: string, options: Options) => {
     }
   } catch (error) {
     if (spinner) spinner.fail("An unexpected error occurred.");
-    CLI_LOG(error.message.replace(/(\d+|Error) /, ""), "error");
+    if ((error as BulkWriterError).code === 7) {
+      permissionDeniedError(error);
+    } else CLI_LOG(error.message.replace(/(\d+|Error) /, ""), "error");
     process.exitCode = 1;
     return;
   } finally {

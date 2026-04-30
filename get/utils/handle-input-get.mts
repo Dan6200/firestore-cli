@@ -11,6 +11,8 @@ import {
   isQuerySnapshot,
 } from "../../utils/firestore/type-guards.mjs";
 import { getDocStream } from "./get-doc-stream.mjs";
+import { BulkWriterError } from "@google-cloud/firestore";
+import { permissionDeniedError } from "../../utils/error-handling.mjs";
 
 export async function handleGetFromInput(
   paths: string[],
@@ -120,7 +122,9 @@ export async function handleGetFromInput(
     pagerInstance.stdin.write(
       "An unexpected error occurred. Press q to exit Pager.",
     );
-    CLI_LOG(e.message.replace(/(\d+|Error) /, ""), "error");
+    if ((e as BulkWriterError).code === 7) {
+      permissionDeniedError(e);
+    } else CLI_LOG(e.message.replace(/(\d+|Error) /, ""), "error");
     errorOccurs = true;
   } finally {
     if (errorOccurs) process.exitCode = 1;

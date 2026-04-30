@@ -8,6 +8,7 @@ import { createInterface } from "readline";
 import { CLI_LOG } from "./utils/logging.mjs";
 import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
 import { BulkWriterError, DocumentReference } from "@google-cloud/firestore";
+import { permissionDeniedError } from "./utils/error-handling.mjs";
 
 // --- Helper for streaming JSONL bulk writes ---
 async function streamBulkSet(
@@ -200,13 +201,10 @@ export default async (path: string, data: string, options: Options) => {
     CLI_LOG(e.message, "error");
     process.exitCode = 1;
   } finally {
-    const authErrors = bulkOpsErrors.filter((e) => e.code === 7);
+    const permissionDeniedErrors = bulkOpsErrors.filter((e) => e.code === 7);
 
-    if (authErrors.length)
-      CLI_LOG(
-        `AuthError: ${authErrors[0].message.replace(/^(.*): /, "")}`,
-        "error",
-      );
+    if (permissionDeniedErrors.length)
+      permissionDeniedError(permissionDeniedErrors[0]);
     const unknownErrors = bulkOpsErrors.filter(
       (e) => e.code != 7 && e.code != 4,
     );
