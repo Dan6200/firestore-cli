@@ -1,10 +1,16 @@
 import { jest } from "@jest/globals";
 import { BlockingQueue } from "../../utils/algorithms/blocking-queues.js";
-import { workerPool } from "../../utils/worker-pool/main.mjs";
 import { WriteResult } from "@google-cloud/firestore";
-import { discoverPaths as realDiscoverPaths } from "../../utils/firestore/path-discoverer.mjs";
 
 // Mock the discovery module
+jest.unstable_mockModule("../../utils/firestore/type-guards.mjs", () => ({
+  isCollection: jest.fn((collection: any) => collection.type === "collection"),
+}));
+
+const { discoverPaths: realDiscoverPaths } = await import(
+  "../../utils/firestore/path-discoverer.mjs"
+);
+
 jest.unstable_mockModule("../../utils/firestore/path-discoverer.mjs", () => ({
   discoverPaths: jest.fn(),
 }));
@@ -13,6 +19,8 @@ jest.unstable_mockModule("../../utils/firestore/path-discoverer.mjs", () => ({
 const { discoverPaths } = await import(
   "../../utils/firestore/path-discoverer.mjs"
 );
+
+const { workerPool } = await import("../../utils/worker-pool/main.mjs");
 
 describe("Worker Pool Engine", () => {
   let queue: BlockingQueue<any>;
@@ -37,7 +45,7 @@ describe("Worker Pool Engine", () => {
     mockCallback = jest
       .fn<() => Promise<WriteResult>>()
       .mockResolvedValue({ writeTime: new Date() } as unknown as WriteResult);
-    mockErrCallback = jest.fn<(reason: string, err: Error | any) => void>();
+    mockErrCallback = jest.fn<(ref: any, err: Error | any) => void>();
     jest.clearAllMocks();
   });
 
@@ -117,6 +125,7 @@ describe("Worker Pool Engine", () => {
     expect(mockCallback).toHaveBeenCalledTimes(70);
     expect(queue.getStatus()).toContain("CLOSED");
   });
+
   it("should respect the recursive flag for collections", async () => {
     const mockCol = { type: "collection", path: "users" };
     await queue.enqueue(mockCol);
@@ -144,7 +153,6 @@ describe("Worker Pool Engine", () => {
     });
 
     expect(mockErrCallback).toHaveBeenCalledWith(
-      "Unexpected Error",
       expect.objectContaining(mockCol),
       expect.objectContaining({
         message: "Collection Path provided without --recurse",

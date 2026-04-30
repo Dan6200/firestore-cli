@@ -1,6 +1,13 @@
 import { jest } from "@jest/globals";
 import { BlockingQueue } from "../../../utils/algorithms/blocking-queues.js";
-import { discoverPaths } from "../../../utils/firestore/path-discoverer.mjs";
+
+jest.unstable_mockModule("../../../utils/firestore/type-guards.mjs", () => ({
+  isCollection: jest.fn((collection: any) => collection.type === "collection"),
+}));
+
+const { discoverPaths } = await import(
+  "../../../utils/firestore/path-discoverer.mjs"
+);
 
 describe("discoverPaths", () => {
   let queue: BlockingQueue<any>;
