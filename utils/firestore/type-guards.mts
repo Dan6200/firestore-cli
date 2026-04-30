@@ -6,7 +6,7 @@ import {
 } from "@google-cloud/firestore";
 
 export function isCollection(ref: any): ref is CollectionReference {
-  return ref?.type === "collection";
+  return ref instanceof CollectionReference;
 }
 
 /** Checks if the object has a .data() method and an .id property */
