@@ -10,7 +10,7 @@ export async function authenticateFirestore({
 }: Options) {
   debug &&
     CLI_LOG(
-      `Service Account Key: ${keyFile}\nDatabase Id: ${databaseId || "(default)"}\nExplicit Project ID: ${projectId || "(none)"}`,
+      `Service Account Key: ${keyFile || "(none)"}\nDatabase Id: ${databaseId || "(default)"}\nExplicit Project ID: ${projectId || "(none)"}`,
       "debug",
     );
 
