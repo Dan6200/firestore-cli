@@ -1,4 +1,5 @@
 import {
+  BulkWriterError,
   CollectionReference,
   DocumentReference,
   WriteResult,
@@ -15,9 +16,8 @@ export async function workerPool(
     signal?: AbortSignal,
   ) => Promise<WriteResult>,
   errCallback?: (
-    reason: string,
     ref: CollectionReference | DocumentReference,
-    error?: Error,
+    error?: Error | BulkWriterError,
   ) => void,
   logger?: (message: string, level?: "info" | "error" | "debug") => void,
   options: {
@@ -73,22 +73,19 @@ export async function workerPool(
           }
         })
         .catch((error) => {
-          let reason: string;
           if (signal.aborted) {
             if (errCallback) {
-              reason = `Task timed out for: ${ref.path}`;
-              errCallback(reason, ref);
+              const reason = `Task timed out for: ${ref.path}`;
+              errCallback(ref, new Error(reason));
             } else {
               logger?.(error, "error");
             }
-          } else if (error.toString().match(/Queue closed/)) {
+          } else if (error.toString().match(/Queue( \w)* closed/)) {
             throw error;
           } else {
-            reason = "Unexpected Error";
             if (errCallback) {
-              errCallback(reason, ref, error);
+              errCallback(ref, error);
             } else {
-              logger?.(reason, "info");
               logger?.(error, "error");
             }
           }
@@ -100,20 +97,26 @@ export async function workerPool(
             queue.close();
           }
           logger?.("ref: " + (ref ? ref.path : "null"), "debug");
+          queue.getStatus().match(/CLOSED/) &&
+            logger?.("Pending processing...", "info");
         });
 
       logger?.(`Active tasks: ${activeTasks.size.toString()}`, "debug");
       activeTasks.add(task);
       logger?.(queue.getStatus(), "debug");
-      logger?.(`Deleting ${queue.size.toString()} document(s)...`, "info");
+      logger?.(
+        queue.size
+          ? `Deleting ${queue.size.toString()} document(s)...`
+          : `Discovering new documents to delete...`,
+        "info",
+      );
     }
   } catch (err: any) {
-    if (!err.toString().match(/Queue closed/)) {
+    if (!err.toString().match(/Queue( \w)* closed/)) {
       const reason = `Unexpected Error`;
       if (errCallback) {
-        errCallback(reason, null, err);
+        errCallback(null, new Error(reason));
       } else {
-        logger?.(reason, "info");
         logger?.(err, "error");
       }
     }
