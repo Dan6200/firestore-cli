@@ -1,5 +1,5 @@
 //cspell:disable
-import ora, { Ora } from "ora";
+import ora from "ora";
 import { Options } from "commander";
 import { createReadStream, existsSync } from "fs";
 import { readFile } from "fs/promises";
@@ -7,11 +7,7 @@ import { resolve } from "path";
 import { createInterface } from "readline";
 import { CLI_LOG } from "./utils/logging.mjs";
 import { authenticateFirestore } from "./auth/authenticate-firestore.mjs";
-import {
-  CollectionReference,
-  DocumentReference,
-} from "@google-cloud/firestore";
-import { getFirestoreReference } from "./utils/get-firestore-reference.mjs";
+import { BulkWriterError, DocumentReference } from "@google-cloud/firestore";
 
 // --- Helper for streaming JSONL bulk writes ---
 async function streamBulkSet(
@@ -19,11 +15,17 @@ async function streamBulkSet(
   db: FirebaseFirestore.Firestore,
   options: Options,
   path: string,
+  bulkOpsErrors: BulkWriterError[],
 ) {
   const bulkWriter = db.bulkWriter({
     throttling: options.rateLimit
       ? { maxOpsPerSecond: options.rateLimit }
       : false,
+  });
+
+  bulkWriter.onWriteError((error) => {
+    if (error.code === 4) return true; // Retry DEADLINE_EXCEEDED
+    return false;
   });
 
   const rl = createInterface({ input: inputStream, crlfDelay: Infinity });
@@ -37,10 +39,11 @@ async function streamBulkSet(
     try {
       const item = JSON.parse(line);
       const { docRef, docData } = getDocRefAndData(item, path, db);
-      bulkWriter.set(docRef, docData, { merge: options.merge });
+      bulkWriter.set(docRef, docData, { merge: options.merge }).catch((e) => {
+        bulkOpsErrors.push(e);
+      });
     } catch (e) {
       rl.close();
-      bulkWriter.close();
       spinner.fail(`Error on line ${lineCount}: ${e.message}`);
       process.exitCode = 1;
     }
@@ -54,7 +57,9 @@ async function streamBulkSet(
   if (process.exitCode === 1) return; // Stop if line parsing failed
 
   spinner.text = "Finalizing writes...";
-  await bulkWriter.close();
+  try {
+    await bulkWriter.close();
+  } catch {}
   spinner.succeed(`Successfully processed ${lineCount} documents.`);
 }
 
@@ -64,6 +69,7 @@ async function fullBulkSet(
   db: FirebaseFirestore.Firestore,
   options: Options,
   path: string,
+  bulkOpsErrors: BulkWriterError[],
 ) {
   const spinner = ora(`Processing ${parsedData.length} documents...`).start();
   const bulkWriter = db.bulkWriter({
@@ -72,9 +78,16 @@ async function fullBulkSet(
       : false,
   });
 
+  bulkWriter.onWriteError((error: any) => {
+    if (error.code === 4) return true; // Retry DEADLINE_EXCEEDED
+    return false;
+  });
+
   parsedData.forEach((item: any) => {
     const { docRef, docData } = getDocRefAndData(item, path, db);
-    bulkWriter.set(docRef, docData, { merge: options.merge });
+    bulkWriter.set(docRef, docData, { merge: options.merge }).catch((e) => {
+      bulkOpsErrors.push(e);
+    });
   });
 
   await bulkWriter.close();
@@ -104,7 +117,8 @@ function getDocRefAndData(
     if (!path) throw new Error("Base path is required for items with 'id'.");
     docRef = db.collection(path).doc(item.id);
   } else {
-    if (!path) throw new Error("Base path is required for auto-generating IDs.");
+    if (!path)
+      throw new Error("Base path is required for auto-generating IDs.");
     docRef = db.collection(path).doc();
   }
   return { docRef, docData };
@@ -121,7 +135,8 @@ function readStdin(): Promise<string> {
 
 // --- Main Command ---
 export default async (path: string, data: string, options: Options) => {
-  const spinner = ora("Initializing...").start();
+  const spinner = ora("Authenticating...").start();
+  const bulkOpsErrors: BulkWriterError[] = [];
   try {
     const db = await authenticateFirestore(options);
     spinner.succeed("Authentication successful.");
@@ -133,20 +148,22 @@ export default async (path: string, data: string, options: Options) => {
         spinner.text = "Processing as JSONL stream...";
         if (options.file) {
           const inputFile = options.file;
-          if (!existsSync(inputFile)) throw new Error(`File not found: ${inputFile}`);
+          if (!existsSync(inputFile))
+            throw new Error(`File not found: ${inputFile}`);
           inputStream = createReadStream(resolve(inputFile));
         } else if (!process.stdin.isTTY) {
           inputStream = process.stdin;
         } else {
           throw new Error("For --jsonl, data must be from --file or stdin.");
         }
-        await streamBulkSet(inputStream, db, options, path);
+        await streamBulkSet(inputStream, db, options, path, bulkOpsErrors);
       } else {
         let parsedData: any;
         spinner.text = "Reading data...";
         if (options.file) {
           const inputFile = options.file;
-          if (!existsSync(inputFile)) throw new Error(`File not found: ${inputFile}`);
+          if (!existsSync(inputFile))
+            throw new Error(`File not found: ${inputFile}`);
           parsedData = JSON.parse(await readFile(resolve(inputFile), "utf8"));
         } else if (!process.stdin.isTTY) {
           const stdinData = await readStdin();
@@ -158,7 +175,7 @@ export default async (path: string, data: string, options: Options) => {
         if (!Array.isArray(parsedData)) {
           throw new Error("Data for bulk operation must be a JSON array.");
         }
-        await fullBulkSet(parsedData, db, options, path);
+        await fullBulkSet(parsedData, db, options, path, bulkOpsErrors);
       }
       return;
     }
@@ -180,7 +197,24 @@ export default async (path: string, data: string, options: Options) => {
     throw new Error("No data provided. Use --file, stdin, or a data argument.");
   } catch (e) {
     spinner.fail(`An error occurred: ${e.message}`);
-    CLI_LOG(e.stack, "error");
+    CLI_LOG(e.message, "error");
     process.exitCode = 1;
+  } finally {
+    const authErrors = bulkOpsErrors.filter((e) => e.code === 7);
+
+    if (authErrors.length)
+      CLI_LOG(
+        `AuthError: ${authErrors[0].message.replace(/^(.*): /, "")}`,
+        "error",
+      );
+    const unknownErrors = bulkOpsErrors.filter(
+      (e) => e.code != 7 && e.code != 4,
+    );
+    if (unknownErrors.length)
+      CLI_LOG(
+        `UnknownError: ${unknownErrors[0]?.message.replace(/^(.*): /, "")}`,
+        "error",
+      );
+    process.exit();
   }
 };
