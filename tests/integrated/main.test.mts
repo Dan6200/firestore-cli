@@ -1,70 +1,106 @@
 import { jest } from "@jest/globals";
-import { execSync, spawn, ChildProcess } from "child_process";
+import { execSync } from "child_process";
 import { readFileSync } from "fs";
-import { resolve } from "path";
 
 // Define a path for the test data
-const DATA_DIR = resolve("tests/integrated/data");
+const DATA_DIR = "tests/integrated/data";
 
-describe("E2E Tests", () => {
-  let emulatorProcess: ChildProcess;
-
+describe("Integrated Tests", () => {
   // Set a long timeout for the entire suite to allow for emulator start and data seeding
   jest.setTimeout(120000); // 2 minutes
 
   beforeAll(() => {
-    // The emulator is now started by the 'test:e2e' npm script.
-    // We just need to seed the database.
-    console.log("Seeding database with lite dataset...");
+    // Seeding the database...
     try {
       execSync(`bash ${DATA_DIR}/upload-lite.sh`);
-      console.log("Database seeded successfully.");
     } catch (error) {
-      console.error("Failed to seed database:", error.message);
       throw error;
     }
   });
 
-  afterAll(() => {
-    // The emulator is now stopped by the 'test:e2e' npm script.
-    console.log("Tests complete. Emulator will be shut down by the parent script.");
-  });
-
   test("should get all documents from a collection", () => {
-    console.log("Running test: should get all documents...");
-    // Get the original data to compare against
     const originalData = JSON.parse(
       readFileSync(`${DATA_DIR}/residents/data.json`, "utf-8"),
     );
 
-    // Run the CLI command to get the documents as JSON
     const cliOutput = execSync(
-      "firestore-cli get providers/test-provider/residents --json",
-    ).toString();
+      "./built/main.mjs get providers/test-provider/residents --no-pager --json",
+      {
+        stdio: ["inherit", "pipe", "pipe"], // ignore stdin to prevent hangs, pipe out/err
+        encoding: "utf-8", // this makes the return value a string, not a Buffer
+      },
+    );
     const parsedOutput = JSON.parse(cliOutput);
 
-    // Assert that the number of documents matches
     expect(parsedOutput.length).toBe(originalData.length);
-    console.log("Test passed: Document count matches.");
   });
 
   test("should delete a document and verify its removal", () => {
-    console.log("Running test: should delete a document...");
     const residentIdToDelete = "0f3acca9-b52c-4447-a32c-df90ab55290c";
     const docPath = `providers/test-provider/residents/${residentIdToDelete}`;
 
     // Run the delete command
-    execSync(`firestore-cli delete ${docPath}`);
-    console.log(`Attempted to delete document: ${docPath}`);
+    execSync(`./built/main.mjs delete ${docPath}`);
 
     // Try to get the deleted document
     const cliOutput = execSync(
-      `firestore-cli get ${docPath} --json`,
+      `./built/main.mjs get ${docPath} --json`,
     ).toString();
     const parsedOutput = JSON.parse(cliOutput);
 
     // Assert that the result is an empty array, confirming deletion
     expect(parsedOutput).toEqual([]);
-    console.log("Test passed: Document successfully deleted.");
+  });
+
+  test("should delete a collection and verify its removal", () => {
+    const originalData = JSON.parse(
+      readFileSync(`${DATA_DIR}/residents/data.json`, "utf-8"),
+    );
+    const colPath = `providers/test-provider/residents/nested/residents`;
+    const parentColPath = `providers/test-provider/residents`;
+
+    execSync(`./built/main.mjs delete ${colPath}`);
+
+    {
+      const cliOutput = execSync(
+        `./built/main.mjs get ${colPath} --json`,
+      ).toString();
+      const parsedOutput = JSON.parse(cliOutput);
+
+      // Assert that the result is an empty array, confirming deletion
+      expect(parsedOutput).toEqual([]);
+    }
+
+    {
+      // Parent docs must be unaffected...
+      const cliOutput = execSync(
+        `./built/main.mjs get ${parentColPath} --json`,
+      ).toString();
+      const parsedOutput = JSON.parse(cliOutput);
+
+      expect(parsedOutput.length).toEqual(originalData.length);
+    }
+  });
+
+  test("should recursively delete all subcollections", () => {
+    const colPath = `providers/test-provider/residents`;
+    const subColPath = `providers/test-provider/residents/nested/residents`;
+
+    // Run the delete command
+    execSync(`./built/main.mjs delete ${colPath}`);
+
+    const cliOutput = execSync(
+      `./built/main.mjs get ${colPath} --json`,
+    ).toString();
+    const parsedOutput = JSON.parse(cliOutput);
+
+    const cliOutput2 = execSync(
+      `./built/main.mjs get ${subColPath} --json`,
+    ).toString();
+    const parsedOutput2 = JSON.parse(cliOutput2);
+
+    // Assert that the result is an empty array, confirming deletion
+    expect(parsedOutput).toEqual([]);
+    expect(parsedOutput2).toEqual([]);
   });
 });

@@ -175,7 +175,7 @@ try {
     .action(get);
 
   program
-    .command("delete <path>")
+    .command("delete [path]")
     .description("Delete document(s) from a given path")
     .option(
       "-k, --service-account-key <VALUE>",

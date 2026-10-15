@@ -1,15 +1,19 @@
 #!/bin/bash
 
-# This script uploads a small subset of data for quick E2E tests.
+# This script uploads a small subset of data for quick Integrated tests.
 
 set -e
 
 PROVIDER_ID="test-provider"
 
-echo "--- E2E Lite: Uploading test data... ---"
+echo "--- Uploading test data... ---"
 
 # Upload a few key collections
-firestore-cli set "providers/$PROVIDER_ID/residents" -b -f "tests/integrated/data/residents/data.json"
-firestore-cli set "providers/$PROVIDER_ID/allergies" -b -f "tests/integrated/data/allergies/data.json"
+./built/main.mjs set "providers/$PROVIDER_ID/residents" -b -f "tests/integrated/data/residents/data.json"
+# ./built/main.mjs set "providers/$PROVIDER_ID/allergies" -b -f "tests/integrated/data/allergies/data.json"
+#
+# # Testing nested paths
+# ./built/main.mjs set "providers/$PROVIDER_ID/residents/nested/residents" -b -f "tests/integrated/data/residents/data.json"
+# ./built/main.mjs set "providers/$PROVIDER_ID/allergies/nested/allergies" -b -f "tests/integrated/data/allergies/data.json"
 
-echo "--- E2E Lite: Upload complete! ---"
+echo "--- Upload complete! ---"

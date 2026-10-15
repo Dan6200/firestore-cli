@@ -124,7 +124,7 @@ export async function handleGetFromInput(
     );
     if ((e as BulkWriterError).code === 7) {
       permissionDeniedError(e);
-    } else CLI_LOG(e.message.replace(/(\d+|Error) /, ""), "error");
+    } else CLI_LOG(e.message.replace(/(\d+|Error) :/, ""), "error");
     errorOccurs = true;
   } finally {
     if (errorOccurs) process.exitCode = 1;

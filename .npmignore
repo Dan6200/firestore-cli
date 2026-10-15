@@ -12,3 +12,4 @@ testing_data
 /.infisical.json
 firestore-debug.log
 tests/e2e/data/**/data.json
+tests/integrated/data/**

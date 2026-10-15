@@ -11,7 +11,7 @@ import { AsyncGate } from "../async-gate.mjs";
 
 export async function workerPool(
   queue: BlockingQueue<CollectionReference | DocumentReference>,
-  callback: (
+  workerCallback: (
     ref: DocumentReference,
     signal?: AbortSignal,
   ) => Promise<WriteResult>,
@@ -39,7 +39,7 @@ export async function workerPool(
 
   try {
     while (true) {
-      const ref = await queue.dequeue(); // Gets stuck here...
+      const ref = await queue.dequeue();
 
       if (activeTasks.size >= 100) {
         await Promise.race(activeTasks);
@@ -69,7 +69,7 @@ export async function workerPool(
                 queue.enqueue(sub);
               }
             }
-            callback(ref, signal); // <-- DON'T await...
+            workerCallback(ref, signal); // <-- DON'T await...
           }
         })
         .catch((error) => {

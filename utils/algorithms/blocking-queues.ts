@@ -21,7 +21,7 @@ export class BlockingQueue<T> {
   }>;
   private isClosed = false;
   private maxSize: number;
-  private drainResolver: () => void;
+  private drainResolver: null | (() => void);
   private isDraining = false;
   private readonly maxPendingDequeues = 10_000;
 
