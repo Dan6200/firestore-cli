@@ -9,8 +9,8 @@ describe("Integrated Tests", () => {
   // Set a long timeout for the entire suite to allow for emulator start and data seeding
   jest.setTimeout(120000); // 2 minutes
 
-  beforeAll(() => {
-    // Seeding the database...
+  beforeEach(() => {
+    // Reseed before every test so mutations don't leak between tests.
     try {
       execSync(`bash ${DATA_DIR}/upload-lite.sh`);
     } catch (error) {
@@ -48,8 +48,8 @@ describe("Integrated Tests", () => {
     ).toString();
     const parsedOutput = JSON.parse(cliOutput);
 
-    // Assert that the result is an empty array, confirming deletion
-    expect(parsedOutput).toEqual([]);
+    // A deleted document is still returned by id, but has no data.
+    expect(parsedOutput).toEqual({ id: residentIdToDelete });
   });
 
   test("should delete a collection and verify its removal", () => {
@@ -59,7 +59,7 @@ describe("Integrated Tests", () => {
     const colPath = `providers/test-provider/residents/nested/residents`;
     const parentColPath = `providers/test-provider/residents`;
 
-    execSync(`./built/main.mjs delete ${colPath}`);
+    execSync(`./built/main.mjs delete --recurse ${colPath}`);
 
     {
       const cliOutput = execSync(
@@ -87,7 +87,7 @@ describe("Integrated Tests", () => {
     const subColPath = `providers/test-provider/residents/nested/residents`;
 
     // Run the delete command
-    execSync(`./built/main.mjs delete ${colPath}`);
+    execSync(`./built/main.mjs delete --recurse ${colPath}`);
 
     const cliOutput = execSync(
       `./built/main.mjs get ${colPath} --json`,

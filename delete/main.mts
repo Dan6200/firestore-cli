@@ -34,20 +34,25 @@ export default async (path: string, options: Options) => {
     spinner.start("Initializing deletion...");
     let docsToDelete: BlockingQueue<CollectionReference | DocumentReference>;
 
-    // 1. Check stdin
+    // Read stdin first, but only use it when it actually contains data.
+    // Otherwise a non-TTY stdin (script, CI, execSync) would shadow the path
+    // argument and leave docsToDelete undefined.
+    let stdinData = "";
     if (!process.stdin.isTTY) {
       spinner.text = "Reading document paths from stdin...";
-      const stdinData = await readStdin();
-      if (stdinData) {
-        docsToDelete = new BlockingQueue({
-          initialItems: stdinData
-            .split("\n")
-            .filter((p) => p.trim())
-            .map((p) => getFirestoreReference(db, p)),
-        });
-      }
+      stdinData = await readStdin();
     }
-    // 2. Check --file
+
+    // 1. Piped stdin
+    if (stdinData) {
+      docsToDelete = new BlockingQueue({
+        initialItems: stdinData
+          .split("\n")
+          .filter((p) => p.trim())
+          .map((p) => getFirestoreReference(db, p)),
+      });
+    }
+    // 2. Explicit --file
     else if (options.file) {
       spinner.text = `Reading document paths from file: ${options.file}...`;
       const inputFile = options.file;
@@ -57,27 +62,22 @@ export default async (path: string, options: Options) => {
         );
       }
       const fileContent = await readFile(resolve(inputFile), "utf8");
-      if (fileContent) {
-        docsToDelete = new BlockingQueue({
-          initialItems: fileContent
-            .split("\n")
-            .filter((p) => p.trim())
-            .map((p) => getFirestoreReference(db, p)),
-        });
-      }
+      docsToDelete = new BlockingQueue({
+        initialItems: fileContent
+          .split("\n")
+          .filter((p) => p.trim())
+          .map((p) => getFirestoreReference(db, p)),
+      });
     }
     // 3. Fallback to path argument
-    else {
-      if (path) {
-        docsToDelete = new BlockingQueue({
-          initialItems: [getFirestoreReference(db, path)],
-        });
-        // console.log(docsToDelete);
-      } else {
-        throw new Error(
-          "A document path or file is required when not reading from stdin.",
-        );
-      }
+    else if (path) {
+      docsToDelete = new BlockingQueue({
+        initialItems: [getFirestoreReference(db, path)],
+      });
+    } else {
+      throw new Error(
+        "A document path or file is required when not reading from stdin.",
+      );
     }
 
     if (docsToDelete.size === 0) {

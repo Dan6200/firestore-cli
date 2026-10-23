@@ -119,16 +119,18 @@ export async function handleGetFromInput(
     }
   } catch (e) {
     if (spinner) spinner.fail("An unexpected error occurred.");
-    pagerInstance.stdin.write(
-      "An unexpected error occurred. Press q to exit Pager.",
-    );
+    if (!failedToStartPager && pagerInstance?.stdin) {
+      pagerInstance.stdin.write(
+        "An unexpected error occurred. Press q to exit Pager.",
+      );
+    }
     if ((e as BulkWriterError).code === 7) {
       permissionDeniedError(e);
     } else CLI_LOG(e.message.replace(/(\d+|Error) :/, ""), "error");
     errorOccurs = true;
   } finally {
     if (errorOccurs) process.exitCode = 1;
-    if (!failedToStartPager) {
+    if (!failedToStartPager && pagerInstance?.stdin) {
       pagerInstance.stdin.end();
       await new Promise<void>((resolve) => {
         pagerInstance.on("close", resolve);

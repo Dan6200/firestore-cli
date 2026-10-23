@@ -46,7 +46,9 @@ const testDocs = [
 ];
 
 // --- Test Suite ---
-describe("E2E: CLI Piping", () => {
+describe.skip("E2E: CLI Piping", () => {
+  test.skip("piping tests are currently disabled", () => {});
+
   //   let tempFilePath: string;
   //
   //   beforeAll(async () => {

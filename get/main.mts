@@ -25,15 +25,19 @@ export default async (path: string, options: Options) => {
     let pathsToGet: string[] = [];
     let isFromInput = false;
 
+    // Read stdin first, but only treat it as the input source when it actually
+    // contains data. Otherwise a non-TTY stdin (script, CI, execSync) would
+    // shadow the path argument.
+    let stdinData = "";
     if (!process.stdin.isTTY) {
-      isFromInput = true;
       spinner.text = "Reading document paths from stdin...";
-      const stdinData = await readStdin();
-      if (stdinData) {
-        pathsToGet = stdinData.split("\n").filter((p) => p.trim());
-      }
-    } else if (options.file) {
+      stdinData = await readStdin();
+    }
+
+    if (stdinData) {
       isFromInput = true;
+      pathsToGet = stdinData.split("\n").filter((p) => p.trim());
+    } else if (options.file) {
       spinner.text = `Reading document paths from file: ${options.file}...`;
       const inputFile = options.file;
       if (!existsSync(inputFile)) {
@@ -41,6 +45,7 @@ export default async (path: string, options: Options) => {
       }
       const fileContent = await readFile(resolve(inputFile), "utf8");
       if (fileContent) {
+        isFromInput = true;
         pathsToGet = fileContent.split("\n").filter((p) => p.trim());
       }
     }

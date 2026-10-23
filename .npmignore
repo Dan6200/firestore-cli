@@ -11,5 +11,5 @@ testing_data
 /_jest.config.mjs
 /.infisical.json
 firestore-debug.log
-tests/e2e/data/**/data.json
-tests/integrated/data/**
+/tests/
+*.md
