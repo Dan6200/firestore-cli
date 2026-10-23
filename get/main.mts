@@ -25,28 +25,29 @@ export default async (path: string, options: Options) => {
     let pathsToGet: string[] = [];
     let isFromInput = false;
 
-    // Read stdin first, but only treat it as the input source when it actually
-    // contains data. Otherwise a non-TTY stdin (script, CI, execSync) would
-    // shadow the path argument.
-    let stdinData = "";
-    if (!process.stdin.isTTY) {
-      spinner.text = "Reading document paths from stdin...";
-      stdinData = await readStdin();
-    }
-
-    if (stdinData) {
-      isFromInput = true;
-      pathsToGet = stdinData.split("\n").filter((p) => p.trim());
-    } else if (options.file) {
+    // Prefer explicit input (--file / path). Only read stdin when neither was
+    // provided, so non-interactive calls with a path never block waiting on an
+    // open stdin pipe that never reaches EOF (e.g. child_process.exec).
+    if (options.file) {
       spinner.text = `Reading document paths from file: ${options.file}...`;
       const inputFile = options.file;
       if (!existsSync(inputFile)) {
         throw new Error(`Invalid file path for --file option: ${inputFile}`);
       }
       const fileContent = await readFile(resolve(inputFile), "utf8");
-      if (fileContent) {
+      const filePaths = fileContent.split("\n").filter((p) => p.trim());
+      if (filePaths.length) {
         isFromInput = true;
-        pathsToGet = fileContent.split("\n").filter((p) => p.trim());
+        pathsToGet = filePaths;
+      }
+    } else if (!path && !process.stdin.isTTY) {
+      spinner.text = "Reading document paths from stdin...";
+      const stdinPaths = (await readStdin())
+        .split("\n")
+        .filter((p) => p.trim());
+      if (stdinPaths.length) {
+        isFromInput = true;
+        pathsToGet = stdinPaths;
       }
     }
 

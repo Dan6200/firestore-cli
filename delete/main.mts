@@ -34,26 +34,10 @@ export default async (path: string, options: Options) => {
     spinner.start("Initializing deletion...");
     let docsToDelete: BlockingQueue<CollectionReference | DocumentReference>;
 
-    // Read stdin first, but only use it when it actually contains data.
-    // Otherwise a non-TTY stdin (script, CI, execSync) would shadow the path
-    // argument and leave docsToDelete undefined.
-    let stdinData = "";
-    if (!process.stdin.isTTY) {
-      spinner.text = "Reading document paths from stdin...";
-      stdinData = await readStdin();
-    }
-
-    // 1. Piped stdin
-    if (stdinData) {
-      docsToDelete = new BlockingQueue({
-        initialItems: stdinData
-          .split("\n")
-          .filter((p) => p.trim())
-          .map((p) => getFirestoreReference(db, p)),
-      });
-    }
-    // 2. Explicit --file
-    else if (options.file) {
+    // Prefer explicit input (--file / path). Only read stdin when neither was
+    // provided, so non-interactive calls with a path never block waiting on an
+    // open stdin pipe that never reaches EOF (e.g. child_process.exec).
+    if (options.file) {
       spinner.text = `Reading document paths from file: ${options.file}...`;
       const inputFile = options.file;
       if (!existsSync(inputFile)) {
@@ -69,10 +53,21 @@ export default async (path: string, options: Options) => {
           .map((p) => getFirestoreReference(db, p)),
       });
     }
-    // 3. Fallback to path argument
+    // Path argument
     else if (path) {
       docsToDelete = new BlockingQueue({
         initialItems: [getFirestoreReference(db, path)],
+      });
+    }
+    // Piped stdin (only when no path/file was given)
+    else if (!process.stdin.isTTY) {
+      spinner.text = "Reading document paths from stdin...";
+      const stdinData = await readStdin();
+      docsToDelete = new BlockingQueue({
+        initialItems: stdinData
+          .split("\n")
+          .filter((p) => p.trim())
+          .map((p) => getFirestoreReference(db, p)),
       });
     } else {
       throw new Error(

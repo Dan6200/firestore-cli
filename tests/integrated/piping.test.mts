@@ -1,4 +1,4 @@
-import { exec, execSync } from "child_process";
+import { exec } from "child_process";
 import { promisify } from "util";
 import { writeFileSync, unlinkSync } from "fs";
 import { tmpdir } from "os";
@@ -7,9 +7,11 @@ import { join } from "path";
 const execAsync = promisify(exec);
 
 // --- Test Configuration ---
-// Ensure the FIRESTORE_EMULATOR_HOST environment variable is set before running.
-// Example: export FIRESTORE_EMULATOR_HOST="localhost:8080"
-const PROJECT_ID = "test"; // Use a dedicated test project ID
+// FIRESTORE_EMULATOR_HOST is provided by `firebase emulators:exec`.
+const PROJECT_ID =
+  process.env.GCLOUD_PROJECT ||
+  process.env.GOOGLE_CLOUD_PROJECT ||
+  "demo-no-project";
 const CLI_COMMAND = `./built/main.mjs`;
 const TEST_COLLECTION = "test_users";
 
@@ -46,58 +48,60 @@ const testDocs = [
 ];
 
 // --- Test Suite ---
-describe.skip("E2E: CLI Piping", () => {
-  test.skip("piping tests are currently disabled", () => {});
+describe("E2E: CLI Piping", () => {
+  let tempFilePath: string;
 
-  //   let tempFilePath: string;
-  //
-  //   beforeAll(async () => {
-  //     // 1. Clear any previous test data
-  //     await clearEmulatorData();
-  //
-  //     // 2. Create a temporary file with test data for seeding
-  //     tempFilePath = join(tmpdir(), `test-data-${Date.now()}.json`);
-  //     writeFileSync(tempFilePath, JSON.stringify(testDocs));
-  //
-  //     // 3. Seed the database using the 'set' command
-  //     await run(
-  //       `${CLI_COMMAND} set ${TEST_COLLECTION} --file ${tempFilePath} --bulk`,
-  //     );
-  //   }, 30000); // Increase timeout for setup
-  //
-  //   afterAll(async () => {
-  //     // 5. Clean up the temporary file and emulator data
-  //     if (tempFilePath) {
-  //       unlinkSync(tempFilePath);
-  //     }
-  //     await clearEmulatorData();
-  //   });
-  //
-  //   it("should query for documents and pipe their paths to the delete command", async () => {
-  //     // 4. Execute the piped command
-  //     const queryCommand = `${CLI_COMMAND} query ${TEST_COLLECTION} --where "status" "==" "to_be_deleted"`;
-  //     const deleteCommand = `${CLI_COMMAND} delete`;
-  //
-  //     const { stdout } = await run(`${queryCommand} | ${deleteCommand}`);
-  //
-  //     // Assert that the delete command reported success for the correct number of docs
-  //     expect(stdout).toContain("Successfully deleted 2 document(s).");
-  //
-  //     // Verify that the documents were actually deleted
-  //     const { stdout: getBob } = await run(
-  //       `${CLI_COMMAND} get ${TEST_COLLECTION}/user_b --json`,
-  //     );
-  //     expect(getBob.trim()).toBe("[]");
-  //
-  //     const { stdout: getCharlie } = await run(
-  //       `${CLI_COMMAND} get ${TEST_COLLECTION}/user_c --json`,
-  //     );
-  //     expect(getCharlie.trim()).toBe("[]");
-  //
-  //     // Verify that other documents were not deleted
-  //     const { stdout: getAlice } = await run(
-  //       `${CLI_COMMAND} get ${TEST_COLLECTION}/user_a --json`,
-  //     );
-  //     expect(JSON.parse(getAlice).name).toBe("Alice");
-  //   }, 30000); // Increase timeout for test
+  beforeAll(async () => {
+    // 1. Clear any previous test data
+    await clearEmulatorData();
+
+    // 2. Create a temporary file with test data for seeding
+    tempFilePath = join(tmpdir(), `test-data-${Date.now()}.json`);
+    writeFileSync(tempFilePath, JSON.stringify(testDocs));
+
+    // 3. Seed the database using the 'set' command
+    await run(
+      `${CLI_COMMAND} set ${TEST_COLLECTION} --file ${tempFilePath} --bulk`,
+    );
+  }, 30000); // Increase timeout for setup
+
+  afterAll(async () => {
+    // 5. Clean up the temporary file and emulator data
+    if (tempFilePath) {
+      unlinkSync(tempFilePath);
+    }
+    await clearEmulatorData();
+  });
+
+  it("should query for documents and pipe their paths to the delete command", async () => {
+    // 4. Execute the piped command
+    const queryCommand = `${CLI_COMMAND} query ${TEST_COLLECTION} --where "status" "==" "to_be_deleted"`;
+    const deleteCommand = `${CLI_COMMAND} delete`;
+
+    const result = await run(`${queryCommand} | ${deleteCommand}`);
+
+    // Spinner/status output goes to stderr, so check both streams.
+    // Assert that the delete command reported success for the correct number of docs
+    expect(result.stdout + result.stderr).toContain(
+      "Successfully deleted 2 document(s).",
+    );
+
+    // Verify that the documents were actually deleted. A missing document is
+    // returned with its id and no data.
+    const { stdout: getBob } = await run(
+      `${CLI_COMMAND} get ${TEST_COLLECTION}/user_b --json`,
+    );
+    expect(JSON.parse(getBob)).toEqual({ id: "user_b" });
+
+    const { stdout: getCharlie } = await run(
+      `${CLI_COMMAND} get ${TEST_COLLECTION}/user_c --json`,
+    );
+    expect(JSON.parse(getCharlie)).toEqual({ id: "user_c" });
+
+    // Verify that other documents were not deleted
+    const { stdout: getAlice } = await run(
+      `${CLI_COMMAND} get ${TEST_COLLECTION}/user_a --json`,
+    );
+    expect(JSON.parse(getAlice).data.name).toBe("Alice");
+  }, 30000); // Increase timeout for test
 });
