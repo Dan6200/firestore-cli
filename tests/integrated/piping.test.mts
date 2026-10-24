@@ -1,6 +1,6 @@
 import { exec } from "child_process";
 import { promisify } from "util";
-import { writeFileSync, unlinkSync } from "fs";
+import { readFileSync, writeFileSync, unlinkSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -8,17 +8,14 @@ const execAsync = promisify(exec);
 
 // --- Test Configuration ---
 // FIRESTORE_EMULATOR_HOST is provided by `firebase emulators:exec`.
-const PROJECT_ID =
-  process.env.GCLOUD_PROJECT ||
-  process.env.GOOGLE_CLOUD_PROJECT ||
-  "demo-no-project";
+const PROJECT_ID = process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || "demo-no-project";
 const CLI_COMMAND = `./built/main.mjs`;
 const TEST_COLLECTION = "test_users";
 
 // --- Helper Functions ---
 const run = async (command: string) => {
   try {
-    return await execAsync(command);
+    return await execAsync(command, { maxBuffer: 64 * 1024 * 1024 });
   } catch (e) {
     // Log stdout/stderr for debugging failed commands
     console.error(`Command failed: ${command}`);
@@ -48,7 +45,7 @@ const testDocs = [
 ];
 
 // --- Test Suite ---
-describe("E2E: CLI Piping", () => {
+describe("Integrated: CLI Piping", () => {
   let tempFilePath: string;
 
   beforeAll(async () => {
@@ -60,9 +57,7 @@ describe("E2E: CLI Piping", () => {
     writeFileSync(tempFilePath, JSON.stringify(testDocs));
 
     // 3. Seed the database using the 'set' command
-    await run(
-      `${CLI_COMMAND} set ${TEST_COLLECTION} --file ${tempFilePath} --bulk`,
-    );
+    await run(`${CLI_COMMAND} set ${TEST_COLLECTION} --file ${tempFilePath} --bulk`);
   }, 30000); // Increase timeout for setup
 
   afterAll(async () => {
@@ -82,26 +77,35 @@ describe("E2E: CLI Piping", () => {
 
     // Spinner/status output goes to stderr, so check both streams.
     // Assert that the delete command reported success for the correct number of docs
-    expect(result.stdout + result.stderr).toContain(
-      "Successfully deleted 2 document(s).",
-    );
+    expect(result.stdout + result.stderr).toContain("Successfully deleted 2 document(s).");
 
     // Verify that the documents were actually deleted. A missing document is
     // returned with its id and no data.
-    const { stdout: getBob } = await run(
-      `${CLI_COMMAND} get ${TEST_COLLECTION}/user_b --json`,
-    );
+    const { stdout: getBob } = await run(`${CLI_COMMAND} get ${TEST_COLLECTION}/user_b --json`);
     expect(JSON.parse(getBob)).toEqual({ id: "user_b" });
 
-    const { stdout: getCharlie } = await run(
-      `${CLI_COMMAND} get ${TEST_COLLECTION}/user_c --json`,
-    );
+    const { stdout: getCharlie } = await run(`${CLI_COMMAND} get ${TEST_COLLECTION}/user_c --json`);
     expect(JSON.parse(getCharlie)).toEqual({ id: "user_c" });
 
     // Verify that other documents were not deleted
-    const { stdout: getAlice } = await run(
-      `${CLI_COMMAND} get ${TEST_COLLECTION}/user_a --json`,
-    );
+    const { stdout: getAlice } = await run(`${CLI_COMMAND} get ${TEST_COLLECTION}/user_a --json`);
     expect(JSON.parse(getAlice).data.name).toBe("Alice");
   }, 30000); // Increase timeout for test
+
+  it("should stream a large data file through stdin with enough throughput", async () => {
+    const fixturePath = "tests/data/observations/data.json";
+    const fixtureData = JSON.parse(readFileSync(fixturePath, "utf-8"));
+    const collection = "test_piped_bulk";
+
+    // File -> jq JSONL stream -> CLI stdin -> streaming bulk set.
+    await run(
+      `jq -c '.[]' ${fixturePath} | ${CLI_COMMAND} set ${collection} -b --jsonl`,
+    );
+
+    const { stdout } = await run(
+      `${CLI_COMMAND} get ${collection} --no-pager --json`,
+    );
+
+    expect(JSON.parse(stdout)).toHaveLength(fixtureData.length);
+  }, 60000); // Increase timeout for the large upload
 });

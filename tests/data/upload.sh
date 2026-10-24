@@ -7,14 +7,15 @@
 set -e
 
 PROVIDER_ID="test-provider"
-PAYLOAD_FILE="tests/integrated/data/payload.jsonl"
+PAYLOAD_FILE="tests/data/payload.jsonl"
 
 echo "--- Bulk: Aggregating data into JSONL payload... ---"
 
 # Use jq to convert all data.json arrays into a single JSONL stream and save it.
 # This will find all data.json files, extract each object from the top-level array, 
 # and print it on a new line.
-jq -c '.[]' tests/integrated/data/**/data.json > "$PAYLOAD_FILE"
+shopt -s globstar
+jq -c '.[]' tests/data/**/data.json > "$PAYLOAD_FILE"
 
 # Check if payload was created
 if [ ! -s "$PAYLOAD_FILE" ]; then
@@ -25,6 +26,6 @@ fi
 echo "--- Bulk: Starting streaming upload... ---"
 
 # Use the --jsonl flag to stream the upload from the aggregated file.
-firestore-cli set "providers/$PROVIDER_ID" -b --jsonl -f "$PAYLOAD_FILE" --rate-limit 500
+./built/main.mjs set "providers/$PROVIDER_ID" -b --jsonl -f "$PAYLOAD_FILE" --rate-limit 500
 
 echo "--- Bulk: Upload complete! ---"
