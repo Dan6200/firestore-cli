@@ -2,7 +2,7 @@ import { build } from "esbuild";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
 import { builtinModules } from "module";
-import { readFile, writeFile } from "fs/promises";
+import { chmod, readFile, writeFile } from "fs/promises";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -34,6 +34,9 @@ async function buildAndAddShebang() {
 
     // 4. Write the final content back to the file
     await writeFile(outfile, finalContent);
+
+    // 5. Ensure the CLI is executable everywhere (fresh CI checkout, tarball)
+    await chmod(outfile, 0o755);
 
     console.log("Build successful.");
   } catch (error) {
