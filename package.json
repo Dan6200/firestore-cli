@@ -5,7 +5,8 @@
   "main": "built/main.mjs",
   "files": [
     "built/main.mjs",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "prebuild": "tsc -p tsconfig.json",
