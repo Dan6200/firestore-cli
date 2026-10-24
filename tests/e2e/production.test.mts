@@ -1,8 +1,9 @@
 // Placeholder for true End-to-End tests against a real Firestore instance.
-// These tests assume the 'firestore-cli' package is globally installed
+// These tests assume the 'firestore-cli' package is globally installed in a container
 // and that Firebase project credentials are set up for a real project.
 
 import { execSync } from "child_process";
+import { readFileSync } from "fs";
 
 // IMPORTANT: For true E2E, ensure these environment variables are correctly set
 // for your *real* Firebase project.
@@ -28,7 +29,10 @@ describe("True E2E Tests against Real Firestore", () => {
   test("should set and get a document from a real Firestore instance", () => {
     console.log("Running true E2E test: set and get document.");
 
-    const testData = { name: "Real E2E Test", timestamp: new Date().toISOString() };
+    const [fixture] = JSON.parse(
+      readFileSync("tests/data/residents/data.json", "utf8"),
+    );
+    const testData = fixture.data;
     const setData = JSON.stringify({ id: TEST_DOC_ID, data: testData });
 
     // Set the document
@@ -36,16 +40,16 @@ describe("True E2E Tests against Real Firestore", () => {
     console.log(`Document set in real Firestore: ${TEST_COLLECTION}/${TEST_DOC_ID}`);
 
     // Get the document
-    const cliOutput = execSync(
-      `${CLI_COMMAND} get ${TEST_COLLECTION}/${TEST_DOC_ID} --json`,
-    ).toString();
+    const cliOutput = execSync(`${CLI_COMMAND} get ${TEST_COLLECTION}/${TEST_DOC_ID} --json`).toString();
     const parsedOutput = JSON.parse(cliOutput);
 
     // Assert that the retrieved data matches the sent data
-    expect(parsedOutput).toEqual(expect.arrayContaining([expect.objectContaining({
+    expect(parsedOutput).toEqual(
+      expect.objectContaining({
         id: TEST_DOC_ID,
-        data: testData
-    })]));
+        data: testData,
+      }),
+    );
     console.log("True E2E test passed: Document set and retrieved successfully.");
   });
 });

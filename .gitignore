@@ -13,3 +13,4 @@ testing_data
 firestore-debug.log
 firebase-debug.log
 notes.md
+tests/data/payload.jsonl
