@@ -4,4 +4,4 @@ FROM node:20-slim
 RUN npm install -g firestore-cli
 
 # Default command to run tests
-CMD ["firestore-cli", "get", "providers/GYRHOME/residents"]
+CMD ["NODE_OPTIONS='--experimental-vm-modules'", "jest", "test/e2e"]
