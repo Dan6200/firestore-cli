@@ -12,4 +12,5 @@ testing_data
 /.infisical.json
 firestore-debug.log
 /tests/
+/built/tests/
 *.md
