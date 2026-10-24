@@ -5,9 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-## [1.1.10] - 2026-10-24
+## [1.1.10] - Unreleased
 
 ### Fixed
 
@@ -92,7 +90,6 @@ Versions before 1.1.8 predate this changelog. Release dates from npm:
 
 Versions 1.0.6 and 1.1.7 were never published.
 
-[Unreleased]: https://github.com/Dan6200/firestore-cli/compare/v1.1.10...HEAD
 [1.1.10]: https://github.com/Dan6200/firestore-cli/compare/v1.1.9...v1.1.10
 [1.1.9]: https://github.com/Dan6200/firestore-cli/compare/v1.1.8...v1.1.9
 [1.1.8]: https://github.com/Dan6200/firestore-cli/releases/tag/v1.1.8
