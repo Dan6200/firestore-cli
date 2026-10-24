@@ -487,6 +487,21 @@ pnpm link
 
 Run the CLI locally and test your changes against a development Firestore project.
 
+### Testing
+
+```bash
+pnpm test:unit        # fast; no emulator required
+pnpm test:integrated  # starts the Firestore emulator (requires Java)
+```
+
+The first integrated run downloads the Firestore emulator jar. Firebase tools caches it outside pnpm at `~/.cache/firebase/emulators`, and `test:integrated` reuses that cache on subsequent runs. To relocate the cache (for example, to a CI cache directory), set `FIREBASE_EMULATORS_PATH`:
+
+```bash
+FIREBASE_EMULATORS_PATH=/path/to/emulator-cache pnpm test:integrated
+```
+
+`pnpm setup_emulator` forces a fresh emulator download and is not needed for normal test runs.
+
 ---
 
 # 🤝 Contributing
