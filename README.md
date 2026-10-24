@@ -444,7 +444,6 @@ For production environments, consider using Google Cloud's Secret Manager or ano
 ### v1.1.10
 
 - **Fix:** `get` and `delete` now prefer an explicit `--file` or `<path>` and only read stdin when neither is supplied. Previously a non-TTY stdin (scripts, CI, `child_process.exec`) shadowed the path argument, causing failures or hangs.
-- **Fix:** restored the `query | delete` piping integration test; the integrated suite runs again.
 
 ### v1.1.9
 
@@ -485,26 +484,7 @@ Link the CLI for local development:
 pnpm link
 ```
 
-Run the CLI locally and test your changes against a development Firestore project.
-
-### Testing
-
-```bash
-pnpm test:unit        # fast; no emulator required
-pnpm test:integrated  # starts the Firestore emulator (requires Java)
-```
-
-The first integrated run downloads the Firestore emulator jar. Firebase tools caches it outside pnpm at `~/.cache/firebase/emulators`, and `test:integrated` reuses that cache on subsequent runs. To relocate the cache (for example, to a CI cache directory), set `FIREBASE_EMULATORS_PATH`:
-
-```bash
-FIREBASE_EMULATORS_PATH=/path/to/emulator-cache pnpm test:integrated
-```
-
-`pnpm setup_emulator` forces a fresh emulator download and is not needed for normal test runs.
-
-`pnpm test:e2e` runs a set/get/delete smoke test against an **already installed** `firestore-cli` (override the binary with `CLI=./built/main.mjs`). Point it at the emulator with `FIRESTORE_EMULATOR_HOST`, or at a real project with ADC and `GOOGLE_CLOUD_PROJECT`. The real-GCP variant runs manually from the **E2E smoke (real GCP, manual)** GitHub workflow.
-
-CI (`.github/workflows/ci.yml`) runs unit + emulator integration tests, plus a parity check that compares the published `built/main.mjs` with the local build.
+Run the CLI locally against a development Firestore project.
 
 ---
 
@@ -516,7 +496,6 @@ If you find a bug or have an idea for improving the CLI, please open an issue or
 
 Before contributing, please make sure your changes:
 
-- Have appropriate tests
 - Follow the existing project conventions
 - Don't expose credentials or sensitive Firestore data
 - Include documentation for new user-facing functionality
