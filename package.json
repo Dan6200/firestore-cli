@@ -15,7 +15,7 @@
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest tests",
     "test:unit": "NODE_OPTIONS='--experimental-vm-modules' jest tests/unit",
     "test:e2e": "bash tests/e2e/smoke.sh",
-    "test:integrated": "pnpm firebase emulators:exec --only firestore \"pnpm integrated_tests\"",
+    "test:integrated": "pnpm firebase emulators:exec --only firestore --project test \"pnpm integrated_tests\"",
     "integrated_tests": "NODE_OPTIONS='--experimental-vm-modules' jest --runInBand tests/integrated",
     "setup_emulator": "pnpm firebase setup:emulators:firestore"
   },

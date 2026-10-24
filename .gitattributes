@@ -1,1 +1,4 @@
 tests/**/data.json filter=lfs diff=lfs merge=lfs -text
+# Small fixtures used by CI are stored as normal blobs so a plain checkout is enough.
+tests/data/residents/data.json -filter -diff -merge text
+tests/data/observations/data.json -filter -diff -merge text

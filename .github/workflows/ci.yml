@@ -34,12 +34,6 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Fetch only the test fixtures we need (LFS)
-        run: |
-          git lfs install --local
-          git lfs pull --include="tests/data/residents/data.json" \
-                       --include="tests/data/observations/data.json"
-
       - name: Cache Firebase emulator jars
         uses: actions/cache@v4
         with:
