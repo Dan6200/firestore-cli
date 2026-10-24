@@ -66,6 +66,25 @@ awk
 
 The CLI avoids requiring users to write custom scripts for common data-management workflows.
 
+#### Input resolution: path, `--file`, or stdin
+
+Commands that accept document paths resolve input in a fixed order:
+
+1. `--file <path>`, if provided.
+2. The positional `<path>` argument, if provided.
+3. Piped stdin, but only when neither of the above is given and stdin is not a TTY.
+
+stdin is deliberately not read when an explicit path or file is supplied. Reading stdin first caused two problems:
+
+- A non-TTY stdin (scripts, CI) shadowed the path argument, so path-based `get`/`delete` calls failed.
+- Commands could block forever when the parent process left the stdin pipe open without sending EOF (for example, Node's `child_process.exec`).
+
+Piping without a positional path is unaffected:
+
+```bash
+firestore-cli query users --where status == inactive | firestore-cli delete
+```
+
 ### 2. Bounded concurrency
 
 Firestore operations can involve a large number of independent documents.

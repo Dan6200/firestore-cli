@@ -443,7 +443,8 @@ For production environments, consider using Google Cloud's Secret Manager or ano
 
 ### v1.1.10
 
-- **Fix:** `get` and `delete` now fall back to the path argument when stdin is not a TTY and no data is piped in. Previously this broke scripts, CI, and other non-interactive usage.
+- **Fix:** `get` and `delete` now prefer an explicit `--file` or `<path>` and only read stdin when neither is supplied. Previously a non-TTY stdin (scripts, CI, `child_process.exec`) shadowed the path argument, causing failures or hangs.
+- **Fix:** restored the `query | delete` piping integration test; the integrated suite runs again.
 
 ### v1.1.9
 
