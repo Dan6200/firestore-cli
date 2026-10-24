@@ -1,0 +1,45 @@
+name: E2E smoke (real GCP, manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Exact npm version to test (e.g. 1.1.10-e2e.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  smoke:
+    name: Published CLI smoke test
+    runs-on: ubuntu-latest
+    environment: gcp-e2e
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - name: Install exact published CLI
+        run: |
+          set -euo pipefail
+          npm install -g "firestore-cli@${{ inputs.version }}"
+          echo "binary: $(command -v firestore-cli)"
+          firestore-cli --version
+
+      - name: Smoke test (real project)
+        env:
+          GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_TEST_PROJECT }}
+          GCLOUD_PROJECT: ${{ vars.GCP_TEST_PROJECT }}
+        run: bash tests/e2e/smoke.sh

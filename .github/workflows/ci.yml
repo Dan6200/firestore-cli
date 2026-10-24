@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Build & test (Firestore emulator)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.7.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Setup Java (Firestore emulator)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Fetch only the test fixtures we need (LFS)
+        run: |
+          git lfs install --local
+          git lfs pull --include="tests/data/residents/data.json" \
+                       --include="tests/data/observations/data.json"
+
+      - name: Cache Firebase emulator jars
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Unit tests
+        run: pnpm test:unit
+
+      - name: Integrated tests (emulator)
+        run: pnpm test:integrated
+
+  package-parity:
+    name: Local build vs published package
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.7.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Compare published bundle with local build
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./package.json').version")
+          echo "package version: $VERSION"
+
+          if ! npm view "firestore-cli@${VERSION}" version >/dev/null 2>&1; then
+            echo "::notice::firestore-cli@${VERSION} is not published yet; skipping parity check"
+            exit 0
+          fi
+
+          mkdir -p /tmp/registry
+          npm pack "firestore-cli@${VERSION}" --pack-destination /tmp/registry >/dev/null
+          tar -xzf /tmp/registry/firestore-cli-*.tgz -C /tmp/registry
+
+          LOCAL=$(sha256sum built/main.mjs | awk '{print $1}')
+          REMOTE=$(sha256sum /tmp/registry/package/built/main.mjs | awk '{print $1}')
+
+          echo "local  built/main.mjs: $LOCAL"
+          echo "remote built/main.mjs: $REMOTE"
+
+          if [ "$LOCAL" != "$REMOTE" ]; then
+            echo "::error::Published firestore-cli@${VERSION} does not match the local build"
+            exit 1
+          fi
+
+          echo "Published package matches the local build."

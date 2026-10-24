@@ -502,6 +502,10 @@ FIREBASE_EMULATORS_PATH=/path/to/emulator-cache pnpm test:integrated
 
 `pnpm setup_emulator` forces a fresh emulator download and is not needed for normal test runs.
 
+`pnpm test:e2e` runs a set/get/delete smoke test against an **already installed** `firestore-cli` (override the binary with `CLI=./built/main.mjs`). Point it at the emulator with `FIRESTORE_EMULATOR_HOST`, or at a real project with ADC and `GOOGLE_CLOUD_PROJECT`. The real-GCP variant runs manually from the **E2E smoke (real GCP, manual)** GitHub workflow.
+
+CI (`.github/workflows/ci.yml`) runs unit + emulator integration tests, plus a parity check that compares the published `built/main.mjs` with the local build.
+
 ---
 
 # 🤝 Contributing
