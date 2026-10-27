@@ -376,31 +376,32 @@ Pagination is particularly useful for large collections and workflows where proc
 
 # Bulk Writes and Deletes
 
-Bulk mutations follow the same general discovery/execution model.
+`set` and `delete` share input handling (path argument, `--file`, or stdin), but
+they do not share the same execution path.
 
 ```text
-Input
- │
- ├── path argument
- ├── file
- └── stdin
-       │
-       ▼
-   Validation
-       │
-       ▼
-   Work queue
-       │
-       ├──► Worker
-       ├──► Worker
-       ├──► Worker
-       └──► Worker
-              │
-              ▼
-          Firestore
+set
+  input → validation → BulkWriter (internal queue, retries, throttle) → Firestore
+
+delete
+  input → discovery / work queue → workerPool (AsyncGate)
+        → BulkWriter (throttle + write concurrency) → Firestore
 ```
 
-This allows the same execution infrastructure to be reused across different input sources.
+- `set` does not use the worker pool. Both the JSON-array path and the JSONL
+  streaming path hand writes to `db.bulkWriter()`, which owns its internal
+  queue, retries, and write concurrency.
+- `delete` uses the worker pool for recursive discovery, progress, and timeout
+  handling. The pool's `AsyncGate` bounds how many callbacks are started; the
+  writes themselves are queued in `BulkWriter`.
+
+`BulkWriter.delete()` only deletes a single `DocumentReference`; it does not
+traverse subcollections. The Firestore client provides
+`firestore.recursiveDelete(ref, bulkWriter?)`, which performs the traversal
+internally and can reuse a configured `BulkWriter`. The CLI currently uses its
+own discovery/worker-pool path for progress reporting and control over
+discovery/submission; whether that extra layer is worth its cost is a benchmark
+question (see `TODO.md`).
 
 For example:
 
@@ -408,39 +409,53 @@ For example:
 firestore-cli query users --where "status" "==" "inactive"   | firestore-cli delete --rate-limit 100
 ```
 
-The `query` process does not need to know how the downstream delete operation works. It only needs to produce a compatible stream of document paths.
+The `query` process does not need to know how the downstream delete operation
+works. It only needs to produce a compatible stream of document paths.
 
 ---
 
 # Rate Limiting
 
-Rate limiting is intentionally separate from worker concurrency.
+`--rate-limit` is implemented by `BulkWriter`, not by a CLI rate limiter.
 
-A simplified model is:
-
-```text
-                Work
-                 │
-                 ▼
-          ┌─────────────┐
-          │ Rate limiter│
-          └─────────────┘
-                 │
-                 ▼
-           AsyncGate
-                 │
-                 ▼
-             Workers
+```ts
+const bulkWriter = db.bulkWriter({
+  throttling: options.rateLimit ? { maxOpsPerSecond: options.rateLimit } : false,
+});
 ```
 
-This provides two independent controls:
+This is used by the bulk `set` paths (`set.mts`) and by `delete`
+(`delete/main.mts`). There is no separate rate limiter in the worker pool.
 
-| Control | Purpose |
-|---|---|
-| Concurrency | Maximum number of active operations |
-| Rate limit | Maximum operation start rate |
+The real layering is:
 
-This distinction matters for bulk workloads. Increasing concurrency can improve throughput when operations are latency-bound, while a rate limit can prevent the CLI from issuing requests faster than the surrounding workload should allow.
+```text
+set:     input → BulkWriter (throttle + internal write queue) → Firestore
+
+delete:  input → discovery/queue → workerPool (AsyncGate) → BulkWriter
+                                  submission concurrency    throttle + write concurrency
+```
+
+`AsyncGate` (see `utils/worker-pool/main.mts` and `utils/async-gate.mts`) is a
+counting semaphore: it bounds how many worker callbacks have been started. In
+`delete`, the callback invokes `bulkWriter.delete(ref)` without awaiting it, so
+the gate bounds **submission**, not the number of in-flight writes. `BulkWriter`
+owns the write-side concurrency, retries, and backpressure; its internal queue
+is what actually drains.
+
+The two controls are independent:
+
+| Control | Owner | Effect |
+|---|---|---|
+| Submission concurrency | `AsyncGate` / `workerPool` | How many worker callbacks are started at once |
+| Operation rate | `BulkWriter` (`maxOpsPerSecond`) | How fast writes are issued, including retries |
+| Write concurrency / backpressure | `BulkWriter` | In-flight writes and its internal queue |
+
+An earlier version of this document showed a rate limiter before `AsyncGate`.
+That was inaccurate: the CLI does not implement a token bucket today. If a
+single ops/s budget is needed across read and write paths, it must be added as
+an explicit layer; until then, treat `--rate-limit` as a `BulkWriter` throttle
+and `concurrencyLimit` as a submission bound.
 
 ---
 
